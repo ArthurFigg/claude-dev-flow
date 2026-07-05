@@ -22,7 +22,7 @@ Voce nao implementa nada. Voce so le, identifica, pergunta e registra decisoes.
 
 # OBJETIVO
 
-Entregar um CLAUDE.md sem inconsistencias e com contexto suficiente para implementar sem adivinhar — antes de qualquer linha de codigo.
+Entregar um CLAUDE.md sem inconsistencias e com contexto suficiente para implementar sem adivinhar — antes de qualquer linha de codigo. A skill releu e corrige de forma iterativa ate o arquivo estabilizar, sem exigir que o usuario a invoque varias vezes manualmente.
 
 # INPUT ESPERADO
 
@@ -40,6 +40,7 @@ Entregar um CLAUDE.md sem inconsistencias e com contexto suficiente para impleme
 3. Perguntas ao usuario — uma por vez, da mais critica para a menos critica
 4. CLAUDE.md atualizado com todas as decisoes registradas
 5. Confirmacao das secoes adicionadas ou corrigidas
+6. Reverificacao automatica do arquivo atualizado — repete PASSO 2, 3 e 3.5 ate estabilizar ou ate detectar loop
 
 # REGRAS DE EXECUCAO
 
@@ -221,6 +222,40 @@ Apos todas as respostas:
 - Crie novas secoes nomeadas pelo topico quando nao houver secao adequada
 - Confirme no chat quais secoes foram corrigidas, adicionadas ou atualizadas
 
+---
+
+## PASSO 6 — Reverificacao automatica
+
+Mantenha, durante toda a execucao desta skill, um historico de achados de cada passada do PASSO 6 (secao ou spec envolvida + par de regras/decisoes em conflito). Esse historico existe so durante a execucao atual — nao e salvo no CLAUDE.md.
+
+Apos concluir o PASSO 5, releia o CLAUDE.md atualizado do zero e repita o PASSO 2, o PASSO 3 e o PASSO 3.5 por completo, como se fosse a primeira leitura — nao filtre os achados nesta releitura, apenas rode a deteccao inteira de novo sobre o estado atual do arquivo (e das specs, se existirem).
+
+**Se esta passada nao encontrar nenhuma inconsistencia nem lacuna:**
+
+```
+CLAUDE.md estabilizado apos [N] passada(s). Nenhuma inconsistencia ou lacuna pendente.
+```
+
+Encerre a skill.
+
+**Se esta passada encontrar problemas**, compare cada achado contra o historico **de todas as passadas anteriores desta execucao** (nao so a ultima). Use um criterio objetivo de equivalencia: mesma secao/spec **e** mesmo par de regras/decisoes em conflito — nao similaridade textual vaga. Duas descricoes diferentes do mesmo conflito entre as mesmas duas regras contam como o mesmo achado.
+
+- **Achado novo** (nao aparece no historico, mesmo que a secao/spec ja tenha aparecido antes por outro motivo) — inclui problemas que ja existiam no arquivo original e nao foram detectados nas passadas anteriores: registre no historico, volte ao PASSO 4 apenas para esses achados, aplique o PASSO 5, e repita o PASSO 6.
+- **Achado ja registrado no historico** (mesma secao/spec + mesmo par de regras de uma passada anterior, nao necessariamente a imediatamente anterior) — a correcao nao resolveu, ou resolveu um lado e reabriu outro em algum ponto de um ciclo: pare o loop imediatamente. Nao repita a mesma pergunta de novo — isso e sinal de contradicao ciclica entre regras (ou entre CLAUDE.md e specs) que esta skill nao resolve perguntando pontualmente, mesmo que o ciclo passe por varias regras diferentes antes de voltar a se repetir.
+
+**Formato do relatorio de loop detectado:**
+
+```
+LOOP DETECTADO apos [N] passadas:
+
+🔴 [secao(oes)/spec(s) envolvidas]: [descricao da contradicao que se repete]
+Motivo provavel: [regra A] e [regra B] se contradizem estruturalmente — corrigir uma reabre a outra (direta ou atraves de outras regras no meio do ciclo).
+
+Esta contradicao nao pode ser resolvida por pergunta pontual. Decida manualmente qual regra prevalece e qual deve ser removida ou reescrita antes de rodar esta skill novamente.
+```
+
+Encerre a skill sem aplicar nenhuma correcao adicional.
+
 # RESTRICOES
 
 - Nunca implementar codigo
@@ -229,6 +264,8 @@ Apos todas as respostas:
 - Nunca fazer mais de uma pergunta por mensagem
 - Nunca perguntar sobre algo ja definido com clareza suficiente no CLAUDE.md
 - Nunca tratar tudo como critico — use a gradacao 🔴/🟡 com criterio
+- Nunca declarar o CLAUDE.md estabilizado sem rodar PASSO 2, PASSO 3 e PASSO 3.5 completos sobre a versao mais recente do arquivo
+- Nunca repetir a mesma pergunta para uma contradicao que ja se mostrou ciclica entre duas passadas — reportar como loop detectado e parar
 
 # CRITERIO DE QUALIDADE
 
@@ -242,3 +279,6 @@ Antes de encerrar, verifique:
 - [ ] O usuario foi informado sobre quais secoes foram corrigidas ou adicionadas?
 - [ ] Conflitos entre CLAUDE.md global e projeto foram verificados?
 - [ ] Specs existentes em `.claude/specs/` foram comparadas com as decisoes do CLAUDE.md?
+- [ ] Apos atualizar o arquivo, a skill rodou PASSO 2, 3 e 3.5 de novo sobre a versao mais recente (PASSO 6)?
+- [ ] Se novos achados apareceram na reverificacao, foram tratados via PASSO 4 antes de encerrar?
+- [ ] Se os achados se repetiram entre duas passadas seguidas, a skill parou e reportou como loop em vez de perguntar de novo?

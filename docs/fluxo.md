@@ -38,8 +38,10 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 - Se specs existirem em `.claude/specs/`, verifica consistência com elas
 - Faz perguntas para preencher as lacunas (uma por vez)
 - Atualiza o CLAUDE.md com as decisões
+- **Relê o arquivo atualizado do zero e repete a verificação inteira**, sem exigir que você rode a skill de novo manualmente. Continua perguntando e corrigindo até uma passada completa não encontrar mais nada.
+- Se a mesma contradição reaparecer em qualquer passada anterior (corrigir um lado reabre o outro — mesmo que passando por outras regras no meio do caminho), para e reporta como "loop detectado" — nesse caso a decisão de qual regra prevalece é sua, não da IA.
 
-**Por que é importante:** um CLAUDE.md com gaps faz a IA adivinhar durante a implementação. Corrigir antes é muito mais barato que corrigir depois.
+**Por que é importante:** um CLAUDE.md com gaps faz a IA adivinhar durante a implementação. Corrigir antes é muito mais barato que corrigir depois. Sem o reloop automático, cada correção que gerasse uma inconsistência nova (ou cada erro que passasse batido na primeira leitura) exigia rodar `/auditar-claude-md` de novo manualmente.
 
 ---
 
