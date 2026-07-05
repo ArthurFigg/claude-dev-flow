@@ -45,7 +45,22 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 
 ---
 
-### Etapa 3 — `/spec` (repetir para cada feature)
+### Etapa 3 — `/dominio` (uma vez por projeto)
+
+**Quando:** logo após o `/auditar-claude-md` aprovar o CLAUDE.md, antes da primeira `/spec`.
+
+**O que faz:**
+- Lê o CLAUDE.md e deriva candidatos a entidade a partir das features e módulos descritos (não pergunta em aberto — sempre propõe primeiro)
+- Propõe as entidades ("as coisas principais que o projeto cria, armazena ou manipula") para você validar
+- Propõe um glossário de termos — qual nome usar sempre e qual evitar, para não haver sinônimo divergente entre specs
+- Avalia se o projeto precisa de mais de um bounded context (vocabulário e regras próprias e separadas) ou se contexto único basta — a maioria dos projetos de portfólio cai em contexto único, e isso é o esperado, não uma limitação
+- Gera `.claude/specs/_dominio.md`, que o `/spec` passa a ler automaticamente
+
+**Por que é importante:** sem isso, specs geradas em conversas separadas podem nomear a mesma coisa de dois jeitos diferentes (ex: uma spec chama de "usuário", outra de "conta"). O `_dominio.md` trava o vocabulário uma vez, no início, para todas as specs seguintes.
+
+---
+
+### Etapa 4 — `/spec` (repetir para cada feature)
 
 **Quando:** para cada feature que você quer implementar.
 
@@ -68,7 +83,7 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 
 ---
 
-### Etapa 4 — `/spec-review`
+### Etapa 5 — `/spec-review`
 
 **Quando:** depois de gerar TODAS as specs, antes de implementar qualquer uma.
 
@@ -84,7 +99,7 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 
 ---
 
-### Etapa 5 — Implementar cada spec + `/spec-close`
+### Etapa 6 — Implementar cada spec + `/spec-close`
 
 Para cada spec, na ordem recomendada pelo spec-review:
 
@@ -109,7 +124,7 @@ Não commite manualmente durante o ciclo de specs. O `/spec-close` é o único c
 
 ---
 
-### Etapa 6 — `/session-start` (sessões subsequentes)
+### Etapa 7 — `/session-start` (sessões subsequentes)
 
 **Quando:** toda vez que abrir o Claude Code em um projeto em andamento.
 
@@ -145,6 +160,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | Skill | Quando usar |
 |---|---|
 | `/auditar-claude-md` | Valida o CLAUDE.md antes de codar |
+| `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
 | `/spec` | Cria a spec de uma feature |
 | `/spec-review` | Revisa o conjunto de specs, define ordem |
 | `/spec-close [nome]` | Fecha uma spec: pytest + commit |

@@ -26,6 +26,7 @@ claude-dev-flow/
   .claude/
     skills/
       auditar-claude-md/       # valida o CLAUDE.md antes de qualquer código
+      dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
       spec/                    # especifica uma feature com critérios verificáveis
       spec-review/             # revisa o conjunto de specs, define ordem de implementação
       spec-close/              # roda pytest, marca concluída, commita
@@ -51,6 +52,7 @@ Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill co
 
 ```
 ~/.claude/commands/auditar-claude-md.md
+~/.claude/commands/dominio.md
 ~/.claude/commands/spec.md
 ~/.claude/commands/spec-review.md
 ~/.claude/commands/spec-close.md
@@ -68,16 +70,17 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 
 ---
 
-## O fluxo em 6 etapas
+## O fluxo em 7 etapas
 
 ```
 1. Criar CLAUDE.md do projeto
 2. /auditar-claude-md     → valida gaps e inconsistências antes de codar
-3. /spec                  → especifica cada feature (repetir para cada uma)
-4. /spec-review           → revisa o conjunto, detecta conflitos, define ordem
-5. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
+3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)
+4. /spec                  → especifica cada feature (repetir para cada uma)
+5. /spec-review           → revisa o conjunto, detecta conflitos, define ordem
+6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
    implementar + /spec-close → para cada spec: pytest passa → commita
-6. /session-start         → usar no início de cada sessão subsequente
+7. /session-start         → usar no início de cada sessão subsequente
 ```
 
 Detalhes de cada etapa, incluindo o que a IA faz internamente e os conceitos por trás de cada decisão: [`docs/fluxo.md`](docs/fluxo.md).
