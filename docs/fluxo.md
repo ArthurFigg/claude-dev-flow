@@ -88,14 +88,17 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 **Quando:** depois de gerar TODAS as specs, antes de implementar qualquer uma.
 
 **O que faz:**
-- Lê todas as specs em `.claude/specs/` de uma vez
-- Detecta conflitos entre specs (interfaces incompatíveis, decisões contraditórias)
+- Lista as specs em `.claude/specs/` e as ordena alfabeticamente
+- Dispara um subagente `verificador-spec` **para cada spec, em paralelo** — cada instância lê a spec dela, cruza com o CLAUDE.md, e compara só com as specs que vêm depois dela na lista (assim nenhum par é verificado duas vezes por duas instâncias diferentes)
+- Consolida os relatórios recebidos de todas as instâncias
 - Corrige automaticamente inconsistências resolúveis (nomenclatura divergente, referências cruzadas faltando)
 - Para conflitos reais que exigem decisão: reporta e pergunta
-- Mapeia dependências (qual spec precisa existir antes de qual)
+- Mapeia dependências a partir do que os subagentes já detectaram
 - Propõe ordem de implementação com justificativa arquitetural
 
-**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código.
+**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código. Verificar em paralelo (em vez de uma spec de cada vez, sequencialmente) deixa a revisão mais rápida e não carrega o texto de todas as specs na conversa principal — só os relatórios resumidos voltam para quem chamou.
+
+**Camada de gate opcional:** se o hook `check-spec-revisao.ps1` estiver ativo no projeto (ver seção 3.8), enquanto qualquer spec estiver com `Revisão: pendente`, o Claude Code recusa tecnicamente qualquer edição de código fora de `.claude/specs/` e do CLAUDE.md — não depende mais só da IA lembrar de checar o campo por instrução.
 
 ---
 
@@ -112,6 +115,8 @@ A IA lê a spec e implementa o código + testes.
 - Lê a spec para extrair o título
 - Roda: `uv run pytest -v`
 - Se testes **passam**:
+  - Dispara o subagente `revisor-codigo`, que lê o `git diff` da spec e reporta problemas de correção, segurança, escopo ou convenção que o pytest não pega (ex: caso de borda que a spec exige mas nenhum teste cobre, segredo hardcoded)
+  - Se o revisor achar algo: mostra o achado e pergunta se você quer corrigir antes ou commitar mesmo assim — a decisão final é sua, o agente nunca corrige nem decide sozinho
   - Marca a spec como concluída no arquivo (adiciona data)
   - Faz o commit com mensagem derivada do título da spec
   - Faz push para o repositório remoto
@@ -121,6 +126,8 @@ A IA lê a spec e implementa o código + testes.
   - Você corrige e roda `/spec-close` novamente
 
 Não commite manualmente durante o ciclo de specs. O `/spec-close` é o único caminho de commit nesta fase.
+
+**Por que o `revisor-codigo` existe:** pytest só prova que o código roda e os asserts passam — não prova que o código faz tudo que a spec pediu. É comum os testes cobrirem o caminho feliz e esquecerem um caso de borda que a spec descreveu explicitamente. O `revisor-codigo` lê o diff a frio, sem o viés de quem acabou de escrever o código, e só tem permissão de leitura (`Read`, `Grep`, `Glob`, `Bash` restrito a comandos git de leitura) — ele fisicamente não consegue editar nada, mesmo que "quisesse".
 
 ---
 
@@ -162,11 +169,13 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/auditar-claude-md` | Valida o CLAUDE.md antes de codar |
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
 | `/spec` | Cria a spec de uma feature |
-| `/spec-review` | Revisa o conjunto de specs, define ordem |
-| `/spec-close [nome]` | Fecha uma spec: pytest + commit |
+| `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
+| `/spec-close [nome]` | Fecha uma spec: pytest + subagente `revisor-codigo` + commit |
 | `/session-start` | Briefing de retomada de sessão |
 | `/git-skill` | Commit fora do ciclo de specs |
 | `/readme` | Gera o README.md quando o projeto estiver pronto |
+
+Os subagentes (`revisor-codigo`, `verificador-spec`) e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README para ativação — e reforçam automaticamente etapas que as skills acima já cobrem por instrução.
 
 ---
 
@@ -306,3 +315,24 @@ A IA não "entende" o código como um humano — ela prediz o próximo token (pe
 - "AI pair programming workflow"
 
 **O que entender:** a IA não "sabe" o que é certo — ela produz o que é estatisticamente provável dado o contexto. Por isso specs precisas e CLAUDE.md detalhado produzem resultados mais consistentes do que pedidos vagos.
+
+---
+
+### 3.8 — Hooks e subagentes: a camada automática opcional
+
+Até certo ponto, este fluxo dependia só de instrução em texto (a IA lê a regra na skill e segue). Os arquivos em `.claude/agents/` e `.claude/hooks/` adicionam dois mecanismos mais fortes, ambos opcionais:
+
+**Hook:** um script que o Claude Code executa automaticamente antes (ou depois) de uma ferramenta ser usada — por exemplo, antes de qualquer edição de arquivo. O hook deste fluxo (`check-spec-revisao.ps1`) roda antes de toda edição e verifica se existe alguma spec com `Revisão: pendente` no projeto atual. Se existir, a edição é recusada — não é um lembrete de texto que a IA pode ignorar por engano, é uma barreira técnica.
+
+**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa dois: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada) e `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo). Nenhum dos dois decide sozinho — os dois só reportam, e a skill principal (ou você) decide o que fazer com o achado.
+
+**Por que isso importa mais do que parece:** escopo restrito de ferramentas é uma garantia técnica, não uma promessa de comportamento. Um subagente sem acesso a `Edit` ou `Write` fisicamente não consegue alterar código, mesmo que "quisesse" — diferente de só instruir "não edite nada" num prompt, que depende da IA seguir a instrução.
+
+**Termos para pesquisar:**
+- "Claude Code hooks PreToolUse PostToolUse"
+- "Claude Code subagents / Task tool"
+- "principle of least privilege" (por que restringir ferramentas importa)
+- "AI agent orchestration"
+- "multi-agent systems software"
+
+**O que entender:** a diferença entre "pedir para a IA não fazer algo" (instrução, pode falhar) e "impedir tecnicamente que a IA faça algo" (permissão restrita, não falha). Hooks e escopo de ferramentas de subagente são a segunda categoria.

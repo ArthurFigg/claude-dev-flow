@@ -16,6 +16,7 @@ Voce nao implementa nada. Voce nao modifica specs. Voce so le, analisa e reporta
 3. Inconsistencias resoluveis (nomenclatura, referencias cruzadas, formatacao) sao corrigidas diretamente nos arquivos de spec, sem perguntar.
 4. Nunca implementar codigo.
 5. A ordem proposta deve seguir dependencia arquitetural, nao ordem de criacao dos arquivos.
+6. A verificacao de cada spec contra o CLAUDE.md e contra as outras specs e feita por subagentes `verificador-spec` disparados em paralelo — nunca leia e compare as specs manualmente no lugar deles.
 
 # OBJETIVO
 
@@ -39,39 +40,46 @@ Entregar um relatorio de revisao coletiva das specs: conflitos detectados, mapa 
 
 # REGRAS DE EXECUCAO
 
-## PASSO 1 — Ler todas as specs
+## PASSO 1 — Listar as specs
 
-Liste todos os arquivos em `.claude/specs/`. Se o diretorio nao existir ou estiver vazio, informe o usuario e encerre.
+Liste os arquivos em `.claude/specs/` (so os nomes, via Glob — nao leia o conteudo ainda). Se o diretorio nao existir ou estiver vazio, informe o usuario e encerre.
 
-Para cada spec, leia o arquivo completo e extraia:
-- **Modulos afetados**: lista da secao "Modulos afetados" com o que muda em cada um
-- **Interfaces definidas**: assinaturas de funcoes, schemas, formatos de retorno, nomes de classes
-- **Decisoes tomadas**: conteudo da secao "Decisoes tomadas"
-- **Nao mexer**: lista da secao correspondente
+Ordene a lista alfabeticamente. Essa ordem define quem verifica quem no PASSO 1.5: cada spec so e comparada com as que vem depois dela na lista, para que nenhum par seja verificado duas vezes por duas instancias diferentes do subagente.
 
 Anuncie o que foi encontrado:
 ```
-Specs encontradas: [lista de arquivos]
-Analisando consistencia entre elas...
+Specs encontradas: [lista de arquivos, em ordem]
+Disparando verificacao paralela...
 ```
 
 ---
 
-## PASSO 2 — Classificar problemas encontrados
+## PASSO 1.5 — Verificacao paralela (subagentes)
 
-Compare todas as specs em pares. Separe em duas categorias:
+Para cada spec da lista (posicao i), chame o agente `verificador-spec` (via Agent tool), passando:
+- Caminho da spec alvo (a spec na posicao i)
+- Caminho do CLAUDE.md do projeto
+- Lista de caminhos das specs nas posicoes i+1 em diante (as que vem depois dela na ordem alfabetica)
 
-**Inconsistencias resoluveis automaticamente** (corrigir no PASSO 2.5, sem perguntar):
-- Mesma entidade referenciada com nomes diferentes entre specs (ex: `usuario` vs `user` vs `conta`) — usar o nome que aparece na maioria das specs ou que segue a convencao do projeto (portugues)
-- Dependencia implicita entre specs sem referencia cruzada — adicionar nota na secao "Decisoes tomadas" das specs envolvidas
-- Mesmo modulo listado como "Nao mexer" em uma spec e como "Modulos afetados" em outra, mas as modificacoes sao compativeis — adicionar nota explicando a relacao
-- Criterios verificaveis vagos que podem ser reescritos sem alterar a decisao original
-- Campos **Ordem**/**Depende de** ausentes, incompletos ou divergentes do mapa de dependencias real (calculado no PASSO 3) — preencher ou corrigir diretamente no cabecalho de cada spec com base nas dependencias efetivamente identificadas, nao na ordem de criacao dos arquivos
+**Dispare todas as chamadas na mesma mensagem** — nao uma por vez, nao aguarde uma terminar para disparar a proxima. O ganho de velocidade e de contexto so existe se forem paralelas.
 
-**Conflitos criticos** (reportar e perguntar ao usuario):
-- Mesmo modulo sendo modificado de formas incompativeis (ex: spec A adiciona parametro X a funcao F, spec B remove esse parametro)
-- Interfaces incompativeis (spec A define funcao com assinatura Y, spec B chama a mesma funcao com assinatura Z)
-- Decisoes contraditórias que afetam o mesmo modulo (ex: spec A decide "erros retornam None", spec B decide "erros levantam excecao" para o mesmo modulo)
+Se so houver 1 spec no lote, ainda chame 1 subagente (lista de "specs depois" vazia) — ele faz so a checagem contra o CLAUDE.md.
+
+Aguarde todas as respostas antes de continuar para o PASSO 2.
+
+---
+
+## PASSO 2 — Consolidar relatorios dos subagentes
+
+Junte as respostas estruturadas recebidas de cada instancia do `verificador-spec` em tres listas:
+
+- **Correcoes automaticas**: uniao das linhas de "CLAUDE.md - corrigivel automaticamente" de todos os relatorios
+- **Conflitos criticos**: uniao das linhas de "CLAUDE.md - conflito critico" e "CONFLITOS COM OUTRAS SPECS" de todos os relatorios
+- **Dependencias**: uniao das linhas de "DEPENDENCIAS DETECTADAS" de todos os relatorios
+
+Como o PASSO 1.5 ja garante que cada par de specs foi verificado por exatamente uma instancia (a da spec que vem primeiro na ordem alfabetica), nao ha necessidade de deduplicar — so agregar as listas.
+
+Se algum relatorio vier vazio ou fora do formato esperado, trate como "nenhum achado" para aquela spec e continue com os demais — nao pare a consolidacao por causa de uma instancia com problema.
 
 ---
 
@@ -106,13 +114,9 @@ Se nao houver conflitos criticos, passe direto para o PASSO 3.
 
 ## PASSO 3 — Mapear dependencias
 
-Para cada par de specs, determine se existe dependencia de implementacao:
+Use a lista de "Dependencias" consolidada no PASSO 2 — os subagentes ja determinaram a direcao de cada dependencia entre os pares que verificaram. Nao reanalise as specs do zero.
 
-Spec B depende de spec A quando:
-- B usa modulos que A cria
-- B chama interfaces que A define
-- B pressupoe dados ou estado que A popula
-- A esta listada na secao "Nao mexer" de B (B nao pode ser testada sem A existir)
+Monte o mapa final a partir dela, incluindo como independente qualquer spec que nao apareceu nem como origem nem como destino em nenhuma dependencia detectada.
 
 Apresente o mapa:
 ```
@@ -150,6 +154,22 @@ ORDEM DE IMPLEMENTACAO RECOMENDADA:
 
 ---
 
+## PASSO 4.5 — Marcar specs aprovadas
+
+Para cada spec que nao tem conflito critico pendente (nem com o CLAUDE.md nem entre specs), atualize o campo `**Revisão:** pendente` no arquivo para `**Revisão:** aprovada`.
+
+Specs com conflito critico ainda nao resolvido permanecem com `**Revisão:** pendente` ate o usuario decidir e a correcao ser aplicada.
+
+Registre no chat:
+```
+REVISAO MARCADA:
+✅ spec_a.md — aprovada
+✅ spec_b.md — aprovada
+⏳ spec_c.md — pendente (conflito critico nao resolvido)
+```
+
+---
+
 ## PASSO 5 — Perguntas ao usuario (somente se necessario)
 
 Se houver conflitos criticos irresoluveis (nao e possivel inferir qual decisao prevalece), faca uma pergunta por vez, da mais critica para a menos critica.
@@ -172,12 +192,15 @@ Nenhum conflito critico. Pode implementar seguindo a ordem acima.
 
 Antes de encerrar, verifique:
 
-- [ ] Todas as specs em `.claude/specs/` foram lidas?
+- [ ] Todas as specs em `.claude/specs/` foram listadas e ordenadas alfabeticamente?
+- [ ] Um subagente `verificador-spec` foi disparado para cada spec, todos na mesma mensagem (em paralelo)?
+- [ ] Todos os relatorios foram recebidos e consolidados antes de aplicar qualquer correcao (PASSO 2)?
 - [ ] Inconsistencias resoluveis foram corrigidas diretamente nos arquivos?
 - [ ] As correcoes aplicadas foram listadas com antes/depois quando relevante?
-- [ ] Conflitos foram verificados em todos os pares de specs?
-- [ ] O mapa de dependencias cobre todas as relacoes entre specs?
+- [ ] O mapa de dependencias foi montado a partir dos relatorios dos subagentes, sem reanalisar as specs do zero?
 - [ ] A ordem respeita tanto dependencias quanto camadas arquiteturais?
 - [ ] Apenas conflitos reais irresoluveis geraram perguntas?
 - [ ] O relatorio e acionavel — o usuario sabe exatamente o que fazer apos ler?
 - [ ] Os campos Ordem/Depende de de cada spec foram conferidos contra o mapa de dependencias real e corrigidos se divergentes?
+- [ ] Specs sem conflito critico foram marcadas com `**Revisão:** aprovada`?
+- [ ] Specs com conflito pendente permanecem com `**Revisão:** pendente`?

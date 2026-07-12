@@ -28,8 +28,6 @@ Salvar o progresso do projeto com commit semantico, push para o remote, e opcion
 - Numero da versao para tag (ex: v1.2.0)
 - Nome do branch (se nao for o atual)
 
-**Parametro especial `mensagem`:** quando outra skill (ex: spec-close) passa a mensagem de commit ja pronta, a git-skill usa diretamente — sem ler diff para sugerir mensagem e sem aguardar confirmacao do usuario. Exemplo de chamada: `/git-skill mensagem: "implementa autenticacao"`.
-
 # ESTRUTURA DE OUTPUT
 
 1. Resumo do estado do repositorio exibido no chat
@@ -40,15 +38,6 @@ Salvar o progresso do projeto com commit semantico, push para o remote, e opcion
 6. Confirmacao final no chat com o hash do commit e a tag criada (se aplicavel)
 
 # REGRAS DE EXECUCAO
-
-## Fluxo 0 — Detectar modo de operacao
-
-Ao iniciar, verifique se foi fornecido o parametro `mensagem`:
-
-- **`mensagem` fornecida:** modo automatico — pule os passos 4 (ler diff) e 6 (propor e aguardar confirmacao). Use a mensagem recebida diretamente no commit. Todos os demais passos (verificar sensiveis, .gitignore, remote, staged area, push) permanecem iguais.
-- **`mensagem` ausente:** modo interativo — execute o fluxo completo com proposta e confirmacao.
-
----
 
 ## Fluxo 1 — Salvar versao (commit + push)
 
@@ -125,21 +114,31 @@ Avise o usuario sobre o que foi adicionado.
 
 ### 6. Propor mensagem de commit
 
-> **Pule este passo se o parametro `mensagem` foi fornecido** — use a mensagem recebida diretamente.
+Baseado no diff ou nos arquivos (primeiro commit), gere uma mensagem seguindo o padrao:
 
-Baseado no diff ou nos arquivos (primeiro commit), gere uma mensagem descritiva e livre:
+```
+tipo: descricao curta do que foi feito
+```
+
+Tipos validos:
+- `feat:` novo recurso ou funcionalidade
+- `fix:` correcao de bug
+- `refactor:` reorganizacao sem mudar comportamento
+- `docs:` mudanca em README ou documentacao
+- `style:` formatacao, espacamento (sem mudar logica)
+- `test:` adicao ou correcao de testes
+- `chore:` configuracao, dependencias, manutencao
 
 Regras da mensagem:
 - Maximo 72 caracteres
 - Verbo no imperativo: "adiciona", "corrige", "remove" (nao "adicionado")
 - Em portugues
-- Sem prefixos de tipo (`feat:`, `fix:`, etc.)
-- Especifica: "adiciona validacao de CPF no cadastro de usuario" nao "atualiza codigo"
+- Especifica: "adiciona validacao de email no checkout" nao "update"
 
 **Exiba a mensagem proposta e aguarde confirmacao explicita do usuario antes de commitar:**
 ```
 Mensagem de commit proposta:
-  adiciona validacao de CPF no cadastro de usuario
+  feat: adiciona validacao de CPF no cadastro de usuario
 
 Confirma? (ou sugira uma alternativa)
 ```
@@ -239,7 +238,7 @@ git push -u origin HEAD
 - Nunca use `git push --force` sem confirmacao explicita do usuario
 - Nunca commite arquivos `.env`, `*.key` ou `secrets.*` sem aviso claro
 - Nunca gere mensagem de commit generica ("update", "ajustes", "wip") — sempre especifica
-- Nunca execute o commit sem mostrar a mensagem proposta e aguardar confirmacao do usuario — exceto quando o parametro `mensagem` for fornecido por outra skill (modo automatico)
+- Nunca execute o commit sem mostrar a mensagem proposta e aguardar confirmacao do usuario
 - Nunca assuma que o remote existe — verifique com `git remote -v` no fluxo principal
 - Nunca commite `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `*.pyc` ou cache de ferramentas
 - Nunca use lightweight tags — sempre tags anotadas (`git tag -a -m`)
@@ -249,8 +248,8 @@ git push -u origin HEAD
 Antes de encerrar, verifique:
 
 - [ ] O diff foi lido antes de gerar a mensagem?
-- [ ] A mensagem foi exibida e confirmada pelo usuario antes do commit? (dispensavel em modo automatico com `mensagem` fornecida)
-- [ ] A mensagem esta em portugues, no imperativo, sem prefixos de tipo e tem menos de 72 caracteres?
+- [ ] A mensagem foi exibida e confirmada pelo usuario antes do commit?
+- [ ] A mensagem esta em portugues, no imperativo e tem menos de 72 caracteres?
 - [ ] Nao ha arquivos sensiveis no commit?
 - [ ] O remote foi verificado antes de tentar o push?
 - [ ] O push foi confirmado com sucesso?

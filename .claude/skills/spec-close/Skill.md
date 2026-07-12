@@ -32,9 +32,10 @@ Exemplos validos que o usuario pode fornecer:
 
 **Se testes passam:**
 1. Resultado do pytest resumido (X passando)
-2. Spec marcada como concluida no arquivo
-3. Commit criado e push executado
-4. Confirmacao com hash do commit
+2. Relatorio do revisor-codigo (achados ou "nenhum problema")
+3. Spec marcada como concluida no arquivo
+4. Commit criado e push executado
+5. Confirmacao com hash do commit
 
 **Se testes falham:**
 1. Resultado do pytest com erros listados claramente
@@ -50,14 +51,60 @@ Normalize o input do usuario para o caminho `.claude/specs/{nome}.md`.
 Leia o arquivo completo. Extraia:
 - **Titulo da feature**: conteudo do primeiro `#` heading (ex: `# Busca de Monstro por Nome` → `busca de monstro por nome`)
 - **Descricao curta**: primeira linha da secao "O que faz"
-- **Tem UI**: verifique se a secao "Modulos afetados" menciona arquivos `.html`, `.js` ou `.css` — registre internamente como `tem_ui = true/false`
-- **Criterios visuais**: se `tem_ui = true`, extraia da secao "Criterios verificaveis" os itens que nao podem ser verificados por `pytest` (ex: "pagina renderiza X", "campo Y aparece", "botao Z funciona") — esses precisam de teste manual no browser
+- **Modo**: verifique a linha `**Status:**` no arquivo:
+  - Se contiver `em revisao` → modo **revisao** (commit sera "revisa {titulo}")
+  - Caso contrario → modo **implementacao** (commit sera "implementa {titulo}")
 
 Se o arquivo nao existir, informe o usuario e encerre:
 ```
 Spec nao encontrada: .claude/specs/{nome}.md
 Verifique o nome e tente novamente.
 ```
+
+---
+
+## PASSO 1.5 — Verificacao visual de UI (somente para specs com componentes de interface)
+
+Leia a secao "Modulos afetados" da spec. Verifique se algum arquivo listado
+sugere componente de UI — procure por nomes contendo: `janela`, `tela`, `frame`,
+`widget`, `_ui`, `painel`, `formulario`, `dialogo`, `menu`, `toolbar`, `canvas`.
+
+Se **nenhum modulo de UI for detectado**: pule este passo e va para o PASSO 2.
+
+Se **modulos de UI forem detectados**:
+
+Leia a secao "Comportamento" da spec e filtre os itens com efeito visual
+observavel — comportamentos que descrevem o que o usuario ve ou interage,
+nao logica interna. Exemplos de itens visuais: "exibe lista de resultados",
+"botao aparece desabilitado", "campo e limpo apos submit", "janela redimensiona
+sem quebrar layout".
+
+Gere o checklist a partir desses itens e exiba:
+
+```
+Componentes de UI detectados: {lista de modulos}
+
+Abra o app (ou preview.py se existir) e verifique cada item antes de continuar:
+
+  [ ] {comportamento visual 1 extraido da spec}
+  [ ] {comportamento visual 2 extraido da spec}
+  [ ] {comportamento visual N extraido da spec}
+  [ ] Widgets com side="right" estao visiveis (nao sumidos atras de frame expansivel)
+  [ ] Redimensionar a janela nao quebra o layout
+
+Todos os itens foram verificados na interface? (s/n)
+```
+
+Aguarde a resposta do usuario.
+
+Se o usuario responder **nao** ou indicar que encontrou problema visual:
+```
+❌ Commit bloqueado — problema visual reportado.
+Corrija o problema na interface e rode /spec-close novamente.
+```
+Pare aqui.
+
+Se o usuario responder **sim**: continue para o PASSO 2.
 
 ---
 
@@ -101,32 +148,25 @@ Exiba:
 ✅ [X] testes passando.
 ```
 
-Passe para o PASSO 4.
+Passe para o PASSO 3D.
 
 ---
 
-## PASSO 3C — Aviso de browser testing (apenas se `tem_ui = true`)
+## PASSO 3D — Revisao automatica do diff (revisor-codigo)
 
-Se `tem_ui = false`: pule este passo.
+Antes de marcar a spec como concluida, chame o agente `revisor-codigo` (via Agent tool), passando o caminho da spec (`.claude/specs/{nome}.md`) e o diretorio atual. Aguarde o relatorio completo antes de continuar.
 
-Se `tem_ui = true`: exiba o aviso abaixo **antes** de marcar a spec como concluida. Nao bloqueie o commit — o aviso e informativo, nao um gate.
+**Se o agente nao encontrar nada:** exiba a linha de confirmacao dele e passe direto para o PASSO 4, sem perguntar nada ao usuario.
 
+**Se o agente encontrar um ou mais problemas:** exiba a lista completa recebida e pergunte:
 ```
-⚠️  Esta spec tem componentes de UI que nao podem ser verificados por pytest.
-    Teste manualmente no browser antes de considerar concluido:
-
-    [ ] {criterio visual 1 extraido da spec}
-    [ ] {criterio visual 2 extraido da spec}
-    ...
-
-    Como testar: suba o servidor com `uv run uvicorn main:app --reload`
-    e acesse as rotas relevantes.
+Revisao automatica encontrou o(s) problema(s) acima.
+Corrigir antes de continuar, ou commitar mesmo assim? (corrigir/commitar)
 ```
+Aguarde a resposta do usuario.
 
-Se o ambiente nao tiver banco de dados provisionado (sem `DATABASE_URL` valido), adicione:
-```
-    ⚠️  Ambiente sem banco — configure DATABASE_URL no .env antes de testar.
-```
+- Se o usuario responder **corrigir** (ou equivalente): pare aqui. Nao marque a spec como concluida nem commite. O usuario vai corrigir e rodar `/spec-close` novamente.
+- Se o usuario responder **commitar mesmo assim** (ou equivalente): continue para o PASSO 4 normalmente.
 
 ---
 
@@ -144,26 +184,77 @@ Use a data atual no formato `YYYY-MM-DD`.
 
 ---
 
-## PASSO 5 — Commitar via git-skill
+## PASSO 5 — Commitar
 
-Derive a mensagem de commit do titulo extraido no PASSO 1:
+### Verificar arquivos sensiveis
 
-- Spec: `# Busca de Monstro por Nome` → `implementa busca de monstro por nome`
-- Spec: `# Tratamento de Erros HTTP` → `implementa tratamento de erros HTTP`
+Execute `git status` e verifique se ha arquivos `.env`, `*.key`, `secrets.*` em qualquer estado (staged, modificado ou untracked). Se sim, pare e avise o usuario antes de continuar.
+
+### Verificar .gitignore
+
+Se `__pycache__/`, `.venv/`, `*.pyc`, `.pytest_cache/`, `.ruff_cache/` aparecerem no status sem estar no `.gitignore`, adicione-os ao `.gitignore` antes de continuar.
+
+### Verificar arquivos de dados gerados em runtime
+
+Execute `git status --porcelain` e filtre as linhas que comecem com `??` (arquivos untracked). Para cada arquivo untracked, verifique se o nome bate em algum dos padroes abaixo:
+
+Padroes suspeitos: `*.db`, `*.sqlite`, `*.sqlite3`, `*.log`, `*.csv`, `*.json` fora de diretorios de codigo fonte (`src/`, `tests/`), arquivos em `dados/`, `banco/`, `logs/`, `exports/`, `output/`, `temp/`.
+
+Se nenhum arquivo suspeito for encontrado: continue normalmente.
+
+Se houver arquivos suspeitos: liste-os e pergunte ao usuario o que fazer antes de continuar:
+
+```
+Arquivos nao rastreados com padrao suspeito encontrados:
+  ?? banco/dados.db
+  ?? logs/app.log
+
+Para cada um, escolha:
+  [G] Adicionar ao .gitignore (nao entra neste commit nem nos proximos)
+  [I] Ignorar desta vez (nao entra neste commit, mas tambem nao vai pro .gitignore)
+  [A] Adicionar ao commit mesmo assim
+
+Aguardando sua decisao antes de continuar.
+```
+
+Aplique as decisoes do usuario antes de executar o `git add -A`.
+
+### Staged area
+
+```bash
+git add -A
+```
+
+### Gerar mensagem de commit
+
+Use o titulo extraido da spec no PASSO 1, em letras minusculas, no imperativo.
+O prefixo depende do **modo** detectado no PASSO 1:
+
+**Modo implementacao** (primeira vez que a spec e fechada):
+- `# Busca de Monstro por Nome` → `implementa busca de monstro por nome`
+- `# Tratamento de Erros HTTP` → `implementa tratamento de erros HTTP`
+
+**Modo revisao** (spec estava "em revisao" via /reabrir-spec):
+- `# Busca de Monstro por Nome` → `revisa busca de monstro por nome`
+- `# Tratamento de Erros HTTP` → `revisa tratamento de erros HTTP`
 
 Regras da mensagem:
-- Comeca com "implementa "
+- Comeca com "implementa " ou "revisa " conforme o modo
 - Sem prefixos de tipo (`feat:`, `fix:`, etc.)
 - Maximo 72 caracteres
 - Em portugues
 
-Invoque a git-skill passando a mensagem ja pronta — ela opera em modo automatico (sem pedir confirmacao):
+### Commit e push
 
-```
-/git-skill mensagem: "implementa {titulo da spec}"
+```bash
+git commit -m "implementa {titulo da spec}"
+git push origin HEAD
 ```
 
-A git-skill cuida de: verificar arquivos sensiveis, checar .gitignore, fazer `git add -A`, commitar e dar push.
+Se for o primeiro push no branch:
+```bash
+git push -u origin HEAD
+```
 
 ---
 
@@ -175,11 +266,6 @@ A git-skill cuida de: verificar arquivos sensiveis, checar .gitignore, fazer `gi
 Spec:   .claude/specs/{nome}.md
 Commit: implementa {titulo}
 Hash:   {hash curto}
-```
-
-Se `tem_ui = true`, repita o aviso de browser testing de forma compacta:
-```
-⚠️  UI nao testada no browser — veja checklist acima (PASSO 3C).
 ```
 
 Se houver outras specs em `.claude/specs/` sem status de concluida, liste-as:
@@ -194,6 +280,11 @@ Specs pendentes: [lista]
 - Nunca marcar spec como concluida antes do commit ter sucesso
 - Nunca usar `git push --force`
 - Nunca commitar arquivos `.env`, `*.key`, `secrets.*`
+- Nunca executar `git add -A` sem antes verificar arquivos untracked com padroes suspeitos (`*.db`, `*.sqlite*`, `*.log`, `*.csv`, dados gerados em runtime)
+- Nunca pular a verificacao visual (PASSO 1.5) quando modulos de UI forem detectados na spec
+- Nunca commitar se o usuario reportar problema visual no checklist de UI
+- Nunca pular a revisao automatica do diff (PASSO 3D) antes de marcar a spec como concluida
+- Nunca commitar se o usuario escolher "corrigir" apos ver os achados do revisor-codigo
 - Nunca usar mensagem generica como "atualiza codigo" ou "correcoes"
 
 # CRITERIO DE QUALIDADE
@@ -201,10 +292,16 @@ Specs pendentes: [lista]
 Antes de encerrar, verifique:
 
 - [ ] O arquivo da spec foi encontrado e o titulo extraido corretamente?
+- [ ] O modo (implementacao ou revisao) foi detectado pelo status da spec?
+- [ ] Modulos de UI foram verificados na secao "Modulos afetados"?
+- [ ] Se UI detectada: checklist visual foi gerado a partir da secao "Comportamento" e confirmado pelo usuario?
 - [ ] `uv run pytest -v` foi executado com output completo capturado?
 - [ ] O commit foi bloqueado se houve qualquer falha ou erro nos testes?
+- [ ] O agente revisor-codigo foi chamado e o relatorio dele exibido antes do PASSO 4?
+- [ ] Se o revisor encontrou problemas, o usuario foi perguntado e a escolha dele respeitada?
+- [ ] Arquivos untracked com padroes suspeitos foram verificados antes do `git add -A`?
+- [ ] A decisao do usuario sobre arquivos suspeitos foi aplicada antes de continuar?
 - [ ] A spec foi marcada como concluida no arquivo?
-- [ ] A mensagem de commit e derivada do titulo da spec, em portugues, sem prefixo de tipo?
+- [ ] A mensagem de commit usa "implementa" ou "revisa" conforme o modo?
 - [ ] O push foi executado com sucesso?
 - [ ] Specs pendentes foram listadas na confirmacao final?
-- [ ] Se a spec tem UI (html/js/css nos modulos afetados), o aviso de browser testing foi exibido com criterios especificos?
