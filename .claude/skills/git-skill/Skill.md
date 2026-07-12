@@ -114,31 +114,19 @@ Avise o usuario sobre o que foi adicionado.
 
 ### 6. Propor mensagem de commit
 
-Baseado no diff ou nos arquivos (primeiro commit), gere uma mensagem seguindo o padrao:
-
-```
-tipo: descricao curta do que foi feito
-```
-
-Tipos validos:
-- `feat:` novo recurso ou funcionalidade
-- `fix:` correcao de bug
-- `refactor:` reorganizacao sem mudar comportamento
-- `docs:` mudanca em README ou documentacao
-- `style:` formatacao, espacamento (sem mudar logica)
-- `test:` adicao ou correcao de testes
-- `chore:` configuracao, dependencias, manutencao
+Baseado no diff ou nos arquivos (primeiro commit), gere uma mensagem descritiva e livre:
 
 Regras da mensagem:
 - Maximo 72 caracteres
 - Verbo no imperativo: "adiciona", "corrige", "remove" (nao "adicionado")
 - Em portugues
-- Especifica: "adiciona validacao de email no checkout" nao "update"
+- Sem prefixos de tipo (`feat:`, `fix:`, etc.)
+- Especifica: "adiciona validacao de CPF no cadastro de usuario" nao "atualiza codigo"
 
 **Exiba a mensagem proposta e aguarde confirmacao explicita do usuario antes de commitar:**
 ```
 Mensagem de commit proposta:
-  feat: adiciona validacao de CPF no cadastro de usuario
+  adiciona validacao de CPF no cadastro de usuario
 
 Confirma? (ou sugira uma alternativa)
 ```
@@ -148,7 +136,7 @@ Somente apos confirmacao, execute o commit.
 ### 7. Fazer o commit
 
 ```bash
-git commit -m "tipo: descricao confirmada"
+git commit -m "descricao confirmada"
 ```
 
 ### 8. Push
