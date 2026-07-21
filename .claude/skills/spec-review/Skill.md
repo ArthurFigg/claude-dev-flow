@@ -40,30 +40,41 @@ Entregar um relatorio de revisao coletiva das specs: conflitos detectados, mapa 
 
 # REGRAS DE EXECUCAO
 
-## PASSO 1 — Listar as specs
+## PASSO 1 — Listar as specs e separar por status
 
 Liste os arquivos em `.claude/specs/` (so os nomes, via Glob — nao leia o conteudo ainda). Se o diretorio nao existir ou estiver vazio, informe o usuario e encerre.
 
-Ordene a lista alfabeticamente. Essa ordem define quem verifica quem no PASSO 1.5: cada spec so e comparada com as que vem depois dela na lista, para que nenhum par seja verificado duas vezes por duas instancias diferentes do subagente.
+Para cada arquivo, extraia so o valor do campo `**Revisão:**` (Grep pontual da linha — nao leia o arquivo inteiro ainda). Separe em dois grupos, cada um ordenado alfabeticamente:
 
-Anuncie o que foi encontrado:
+- **Aprovada**: campo = `aprovada`.
+- **Pendente**: campo = `pendente`, ou campo ausente (spec nunca verificada).
+
+Se o grupo "Pendente" estiver vazio, informe e encerre a skill aqui — nao ha nada novo pra verificar, e specs aprovadas nunca sao reverificadas por padrao:
 ```
-Specs encontradas: [lista de arquivos, em ordem]
-Disparando verificacao paralela...
+Todas as specs ja estao aprovadas. Nenhuma verificacao nova necessaria.
+```
+
+Se houver specs pendentes, anuncie:
+```
+Specs aprovadas: [lista ou "nenhuma"]
+Specs pendentes: [lista]
+Disparando verificacao paralela so das pendentes...
 ```
 
 ---
 
-## PASSO 1.5 — Verificacao paralela (subagentes)
+## PASSO 1.5 — Verificacao paralela (subagentes) — so das specs pendentes
 
-Para cada spec da lista (posicao i), chame o agente `verificador-spec` (via Agent tool), passando:
-- Caminho da spec alvo (a spec na posicao i)
+Para cada spec do grupo "Pendente" (posicao i dentro do proprio grupo), chame o agente `verificador-spec` (via Agent tool), passando:
+- Caminho da spec pendente (a spec alvo)
 - Caminho do CLAUDE.md do projeto
-- Lista de caminhos das specs nas posicoes i+1 em diante (as que vem depois dela na ordem alfabetica)
+- Lista de comparacao: **todas** as specs do grupo "Aprovada" + as specs do grupo "Pendente" que vem depois dela na ordem alfabetica dentro do proprio grupo (evita comparar duas pendentes duas vezes; a comparacao contra aprovadas nunca duplica porque so as pendentes disparam agente)
 
-**Dispare todas as chamadas na mesma mensagem** — nao uma por vez, nao aguarde uma terminar para disparar a proxima. O ganho de velocidade e de contexto so existe se forem paralelas.
+**Nunca dispare o agente para uma spec do grupo "Aprovada"** — ela ja foi verificada numa chamada anterior e nao mudou desde entao. Uma spec aprovada so volta a disparar agente se o usuario pedir explicitamente pra reverificar ela especificamente, ou se `/reabrir-spec` marcou o campo de volta pra `pendente`.
 
-Se so houver 1 spec no lote, ainda chame 1 subagente (lista de "specs depois" vazia) — ele faz so a checagem contra o CLAUDE.md.
+**Dispare todas as chamadas do grupo pendente na mesma mensagem** — nao uma por vez, nao aguarde uma terminar para disparar a proxima.
+
+Se so houver 1 spec pendente, ainda chame 1 subagente (lista de "pendentes depois" vazia, mas comparando contra todas as aprovadas).
 
 Aguarde todas as respostas antes de continuar para o PASSO 2.
 
@@ -77,7 +88,7 @@ Junte as respostas estruturadas recebidas de cada instancia do `verificador-spec
 - **Conflitos criticos**: uniao das linhas de "CLAUDE.md - conflito critico" e "CONFLITOS COM OUTRAS SPECS" de todos os relatorios
 - **Dependencias**: uniao das linhas de "DEPENDENCIAS DETECTADAS" de todos os relatorios
 
-Como o PASSO 1.5 ja garante que cada par de specs foi verificado por exatamente uma instancia (a da spec que vem primeiro na ordem alfabetica), nao ha necessidade de deduplicar — so agregar as listas.
+Como o PASSO 1.5 ja garante que cada par envolvendo ao menos uma spec pendente foi verificado por exatamente uma instancia, nao ha necessidade de deduplicar — so agregar as listas. Pares entre duas specs ja aprovadas nao aparecem aqui porque foram resolvidos em chamadas anteriores.
 
 Se algum relatorio vier vazio ou fora do formato esperado, trate como "nenhum achado" para aquela spec e continue com os demais — nao pare a consolidacao por causa de uma instancia com problema.
 
@@ -114,9 +125,12 @@ Se nao houver conflitos criticos, passe direto para o PASSO 3.
 
 ## PASSO 3 — Mapear dependencias
 
-Use a lista de "Dependencias" consolidada no PASSO 2 — os subagentes ja determinaram a direcao de cada dependencia entre os pares que verificaram. Nao reanalise as specs do zero.
+Combine duas fontes, sem reanalisar nenhuma spec do zero:
 
-Monte o mapa final a partir dela, incluindo como independente qualquer spec que nao apareceu nem como origem nem como destino em nenhuma dependencia detectada.
+1. **Dependencias novas** — a lista consolidada no PASSO 2, vinda dos subagentes desta chamada (envolvendo as specs pendentes).
+2. **Dependencias ja registradas** — leia o campo `**Depende de:**` de cada spec do grupo "Aprovada" diretamente (Grep pontual do campo, sem reabrir agente) — foram determinadas em chamadas anteriores e continuam validas enquanto a spec nao for reaberta.
+
+Monte o mapa final combinando as duas fontes, incluindo como independente qualquer spec que nao apareceu nem como origem nem como destino em nenhuma dependencia (nova ou ja registrada).
 
 Apresente o mapa:
 ```
@@ -187,17 +201,20 @@ Nenhum conflito critico. Pode implementar seguindo a ordem acima.
 - Nunca propor ordem sem justificativa arquitetural explicita
 - Nunca fazer mais de uma pergunta por mensagem
 - Nunca tratar inconsistencias resoluveis como conflitos criticos — corrigir e seguir
+- Nunca disparar o agente `verificador-spec` para uma spec ja marcada `aprovada` — so specs `pendente` (novas ou reabertas) disparam verificacao, a menos que o usuario peca explicitamente para reverificar uma spec especifica
 
 # CRITERIO DE QUALIDADE
 
 Antes de encerrar, verifique:
 
-- [ ] Todas as specs em `.claude/specs/` foram listadas e ordenadas alfabeticamente?
-- [ ] Um subagente `verificador-spec` foi disparado para cada spec, todos na mesma mensagem (em paralelo)?
+- [ ] Todas as specs em `.claude/specs/` foram listadas e separadas em aprovada/pendente?
+- [ ] Se nao havia spec pendente, a skill encerrou informando isso, sem disparar agente e sem repetir relatorio antigo?
+- [ ] Um subagente `verificador-spec` foi disparado so para as specs pendentes (nunca para as ja aprovadas), todos na mesma mensagem (em paralelo)?
+- [ ] Cada agente de spec pendente comparou contra todas as aprovadas, alem das pendentes seguintes na ordem alfabetica?
 - [ ] Todos os relatorios foram recebidos e consolidados antes de aplicar qualquer correcao (PASSO 2)?
 - [ ] Inconsistencias resoluveis foram corrigidas diretamente nos arquivos?
 - [ ] As correcoes aplicadas foram listadas com antes/depois quando relevante?
-- [ ] O mapa de dependencias foi montado a partir dos relatorios dos subagentes, sem reanalisar as specs do zero?
+- [ ] O mapa de dependencias combinou as dependencias novas com o campo `Depende de` das specs ja aprovadas, sem reanalisar as specs do zero?
 - [ ] A ordem respeita tanto dependencias quanto camadas arquiteturais?
 - [ ] Apenas conflitos reais irresoluveis geraram perguntas?
 - [ ] O relatorio e acionavel — o usuario sabe exatamente o que fazer apos ler?

@@ -85,18 +85,19 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 
 ### Etapa 5 — `/spec-review`
 
-**Quando:** depois de gerar TODAS as specs, antes de implementar qualquer uma.
+**Quando:** antes de implementar qualquer spec. Pode ser chamada depois de gerar todas as specs de uma vez, ou depois de cada spec individual — o comportamento se adapta aos dois usos.
 
 **O que faz:**
-- Lista as specs em `.claude/specs/` e as ordena alfabeticamente
-- Dispara um subagente `verificador-spec` **para cada spec, em paralelo** — cada instância lê a spec dela, cruza com o CLAUDE.md, e compara só com as specs que vêm depois dela na lista (assim nenhum par é verificado duas vezes por duas instâncias diferentes)
+- Lista as specs em `.claude/specs/` e separa em dois grupos pelo campo `**Revisão:**`: `aprovada` (já verificada numa chamada anterior, sem mudança desde então) e `pendente` (nova ou reaberta via `/reabrir-spec`)
+- Se não há nenhuma spec pendente, encerra avisando — não repete verificação nem relatório de specs já aprovadas
+- Dispara um subagente `verificador-spec` **só para cada spec pendente, em paralelo** — nunca para as já aprovadas. Cada instância lê a spec pendente dela, cruza com o CLAUDE.md, e compara contra **todas** as specs aprovadas mais as pendentes que vêm depois dela na lista (assim nenhum par é verificado duas vezes por duas instâncias diferentes)
 - Consolida os relatórios recebidos de todas as instâncias
 - Corrige automaticamente inconsistências resolúveis (nomenclatura divergente, referências cruzadas faltando)
 - Para conflitos reais que exigem decisão: reporta e pergunta
-- Mapeia dependências a partir do que os subagentes já detectaram
+- Mapeia dependências combinando o que os subagentes detectaram agora com o campo `Depende de` já registrado nas specs aprovadas
 - Propõe ordem de implementação com justificativa arquitetural
 
-**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código. Verificar em paralelo (em vez de uma spec de cada vez, sequencialmente) deixa a revisão mais rápida e não carrega o texto de todas as specs na conversa principal — só os relatórios resumidos voltam para quem chamou.
+**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código. Verificar em paralelo evita carregar o texto de todas as specs na conversa principal — só os relatórios resumidos voltam para quem chamou. E não reverificar specs já aprovadas importa de verdade em fluxo incremental: cada subagente paga um custo fixo de inicialização (não reaproveita cache entre chamadas), então revisar uma spec de cada vez sem essa otimização significa pagar esse custo de novo, para as mesmas specs já confirmadas, a cada nova spec criada.
 
 **Camada de gate opcional:** se o hook `check-spec-revisao.ps1` estiver ativo no projeto (ver seção 3.8), enquanto qualquer spec estiver com `Revisão: pendente`, o Claude Code recusa tecnicamente qualquer edição de código fora de `.claude/specs/` e do CLAUDE.md — não depende mais só da IA lembrar de checar o campo por instrução.
 
