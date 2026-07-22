@@ -40,7 +40,7 @@ Entregar um CLAUDE.md sem inconsistencias e com contexto suficiente para impleme
 3. Perguntas ao usuario — uma por vez, da mais critica para a menos critica
 4. CLAUDE.md atualizado com todas as decisoes registradas
 5. Confirmacao das secoes adicionadas ou corrigidas
-6. Reverificacao automatica do arquivo atualizado — repete PASSO 2-5 ate estabilizar ou ate detectar loop
+6. Reverificacao automatica do arquivo atualizado — repete a deteccao (PASSO 2 e 3) e, se houver achado novo, os PASSO 4 e 5, ate estabilizar ou ate detectar loop
 
 # REGRAS DE EXECUCAO
 
@@ -194,7 +194,7 @@ Apos todas as respostas:
 
 ## PASSO 6 — Reverificacao automatica
 
-Mantenha, durante toda a execucao desta skill, um historico de achados de cada passada do PASSO 6 (secao envolvida + par de regras em conflito). Esse historico existe so durante a execucao atual — nao e salvo no CLAUDE.md.
+Mantenha, durante toda a execucao desta skill, um historico de achados de cada passada de reverificacao (a deteccao re-rodada abaixo) — secao envolvida + par de regras em conflito. Esse historico existe so durante a execucao atual — nao e salvo no CLAUDE.md.
 
 Apos concluir o PASSO 5, releia o CLAUDE.md atualizado do zero e repita o PASSO 2 e o PASSO 3 por completo, como se fosse a primeira leitura — nao filtre os achados nesta releitura, apenas rode a deteccao inteira de novo sobre o estado atual do arquivo.
 

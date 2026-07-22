@@ -273,13 +273,30 @@ Regras da mensagem:
 - Maximo 72 caracteres
 - Em portugues
 
-### Commit e push
+### Commit
 
 ```bash
 git commit -m "implementa {titulo da spec}"
-git push origin HEAD
 ```
 
+### Push (somente se houver remote)
+
+O commit acima ja fechou a spec localmente — a ausencia de remote nao e falha, e o trabalho nao pode ser tratado como perdido. Verifique antes de empurrar:
+
+```bash
+git remote
+```
+
+**Se nao houver saida (nenhum remote configurado):** pule o push. Avise e siga para o PASSO 6:
+```
+Commit local feito e spec fechada. Nenhum remote configurado — push pulado.
+Configure com `git remote add origin <url>` e rode `git push -u origin HEAD`.
+```
+
+**Se houver remote:** empurre.
+```bash
+git push origin HEAD
+```
 Se for o primeiro push no branch:
 ```bash
 git push -u origin HEAD
@@ -336,5 +353,5 @@ Antes de encerrar, verifique:
 - [ ] A spec foi marcada como concluida no arquivo?
 - [ ] A secao "Impacto no CLAUDE.md" foi lida e, se diferente de "nenhum", as secoes indicadas foram sincronizadas antes do commit (PASSO 4.5)?
 - [ ] A mensagem de commit usa "implementa" ou "revisa" conforme o modo?
-- [ ] O push foi executado com sucesso?
+- [ ] O push foi executado (ou pulado com aviso, se nao ha remote configurado)?
 - [ ] Specs pendentes foram listadas na confirmacao final?

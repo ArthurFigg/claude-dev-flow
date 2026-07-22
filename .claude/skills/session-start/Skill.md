@@ -19,7 +19,7 @@ Voce nao implementa nada. Voce nao faz perguntas. Voce so le, consolida e report
 
 # OBJETIVO
 
-Entregar em menos de 25 linhas: estado dos testes, specs concluidas vs pendentes, ultimo commit, mudancas nao commitadas e proximo passo recomendado.
+Entregar em menos de 25 linhas: estado dos testes, specs concluidas vs pendentes, ultimo commit, mudancas nao commitadas, resumo da seção de status do CLAUDE.md (reconciliada com git/specs) e proximo passo recomendado.
 
 # INPUT ESPERADO
 
@@ -44,14 +44,21 @@ SPECS:
   Concluidas (X): {lista de nomes}
   Pendentes  (Y): {lista de nomes — primeira e a proxima}
 
-PROXIMO PASSO: /spec-close {nome} ou implementar {proxima spec pendente}
+CLAUDE.md: {item pendente mais relevante da seção de status, em 1 linha — ou "sem seção de status"}
+{⚠️ linha de divergencia — só aparece se o status escrito contradiz git/specs}
+
+PROXIMO PASSO: {acao especifica — ver regras no PASSO 5}
 ```
 
 # REGRAS DE EXECUCAO
 
 ## PASSO 1 — Ler o CLAUDE.md
 
-Leia o CLAUDE.md no diretorio atual. Extraia o nome do projeto.
+Leia o CLAUDE.md no diretorio atual. Extraia:
+- **Nome do projeto**
+- **Seção de status escrita à mão**, se houver — a parte onde o usuario registra o que ja foi feito e o que falta (titulos tipicos: "Status", "Próximos passos", "O que falta", "Estado atual", "Histórico de sessões", "Roadmap", ou um checklist de features). É o registro humano da intencao — vale mais que qualquer inferencia automatica de git/specs.
+
+Se houver seção de status, identifique o item pendente mais relevante (o proximo trabalho declarado por escrito). Se nao houver nenhuma seção assim, registre "sem seção de status" e siga — o proximo passo virá só de specs/git.
 
 Se o CLAUDE.md nao existir, informe e encerre:
 ```
@@ -144,11 +151,20 @@ Regras de montagem:
 - Listar apenas os nomes dos arquivos (sem caminho, sem extensao)
 - Se nao houver specs: "nenhuma spec encontrada"
 
-**Proximo passo:**
-- Se ha testes falhando: `corrigir testes antes de avancar`
-- Se ha mudancas nao commitadas: `commitar mudancas pendentes (/git-skill)`
-- Se tudo limpo e ha spec pendente: `implementar {nome da proxima spec}`
-- Se todas as specs estao concluidas: `todas as specs concluidas — projeto pronto para release`
+**CLAUDE.md (seção de status):**
+- Se ha seção de status escrita à mao: resuma em 1 linha o item pendente mais relevante. **Nunca copie a seção inteira** — sempre resuma.
+- Reconcilie com o estado automatico. Se o status escrito contradiz git/specs, adicione uma linha de divergencia logo abaixo:
+  `⚠️  CLAUDE.md diz "{trecho}" mas {o que git/specs mostram} — status pode estar desatualizado`
+  Exemplos: status diz "falta implementar X" mas existe commit `implementa X` e a spec esta concluida; status diz "projeto pronto" mas ha spec pendente.
+- Se nao ha seção de status: linha `CLAUDE.md: sem seção de status`.
+
+**Proximo passo** (primeira condicao que se aplicar, nesta ordem):
+- Testes falhando: `corrigir testes antes de avancar`
+- Mudancas nao commitadas de uma spec em andamento: `fechar com /spec-close {nome}`; se forem mudancas avulsas: `commitar com /git-skill`
+- Spec pendente com `**Revisão:**` diferente de `aprovada`: `/spec-review antes de implementar {nome}`
+- Spec pendente ja aprovada: `/implementar {nome da proxima spec}`
+- Todas as specs concluidas: `todas as specs concluidas — considerar /encerrar-projeto`
+- Item do status do CLAUDE.md que nao corresponde a nenhuma spec (trabalho ainda nao especificado): `especificar "{item}" com /spec`
 
 # RESTRICOES
 
@@ -157,12 +173,15 @@ Regras de montagem:
 - Nunca ultrapassar 25 linhas no briefing
 - Nunca recomendar "proximo passo" generico — sempre especifico e acionavel
 - Nunca omitir mudancas nao commitadas — sempre mencionar, mesmo que seja so um arquivo
+- Nunca copiar a seção de status do CLAUDE.md inteira — sempre resumir em 1 linha
+- Nunca deixar de sinalizar quando o status escrito no CLAUDE.md contradiz o que git/specs mostram
 
 # CRITERIO DE QUALIDADE
 
 Antes de exibir o briefing, verifique:
 
-- [ ] CLAUDE.md foi lido e nome do projeto extraido?
+- [ ] CLAUDE.md foi lido, nome do projeto extraido e a seção de status (se houver) resumida em 1 linha?
+- [ ] Divergencia entre o status escrito no CLAUDE.md e o estado real (git/specs) foi sinalizada, se houver?
 - [ ] Todas as specs foram classificadas cruzando arquivo E git log?
 - [ ] Divergencias entre arquivo e git foram reportadas no briefing?
 - [ ] git log e git status foram executados?

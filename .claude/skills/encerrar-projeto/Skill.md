@@ -165,10 +165,26 @@ git tag
 
 Se a tag informada pelo usuario ja existir, avise e pergunte se quer usar outra versao. Nao sobrescreva tags existentes.
 
-### Criar e publicar a tag
+### Criar a tag e publicar (push somente se houver remote)
 
 ```bash
 git tag {versao} -m "release {versao}"
+```
+
+A tag foi criada localmente. Verifique se ha remote antes de empurrar:
+
+```bash
+git remote
+```
+
+**Se nao houver saida (nenhum remote configurado):** pule o push da tag e avise, seguindo para o PASSO 6:
+```
+Tag {versao} criada localmente. Nenhum remote configurado — push da tag pulado.
+Configure com `git remote add origin <url>` e rode `git push origin {versao}`.
+```
+
+**Se houver remote:**
+```bash
 git push origin {versao}
 ```
 
@@ -239,6 +255,6 @@ Antes de encerrar, verifique:
       conferem), nao apenas checado por existencia?
 - [ ] O CLAUDE.md foi auditado quanto a coerencia com o estado real (status de
       specs, checklists, comandos) antes da tag?
-- [ ] Tag foi criada e publicada sem sobrescrever tag existente?
+- [ ] Tag foi criada (e publicada, se ha remote configurado) sem sobrescrever tag existente?
 - [ ] Encerramento foi registrado no CLAUDE.md com data, versao, contagem de testes, commits e periodo?
 - [ ] Os tres comandos git foram executados e os valores preenchidos no bloco (commits, data do primeiro commit, dias ativos)?
