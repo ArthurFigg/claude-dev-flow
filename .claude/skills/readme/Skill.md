@@ -1,5 +1,5 @@
 ---
-name: Gerador de README
+name: readme
 description: Redator tecnico de documentacao. Invocar quando o projeto estiver pronto e o usuario pedir para criar o README.md. Le o projeto real e gera README completo, preciso e sem informacao inventada.
 ---
 
@@ -85,8 +85,22 @@ Se existir: `config.py`, `settings.py`, `.env.example`, `config.yaml`, `config.j
 ### Estrutura de pastas
 Use glob `**/*` (so caminhos, sem conteudo) para montar a arvore de pastas.
 
+### CI — verificar se existe workflow de testes
+Verifique se `.github/workflows/tests.yml` existe no projeto.
+
+Se existir, execute `git remote get-url origin` para extrair o usuario e o
+nome do repositorio no formato `https://github.com/{usuario}/{repo}.git` ou
+`git@github.com:{usuario}/{repo}.git`. Extraia `{usuario}` e `{repo}` para
+montar o badge na secao de titulo.
+
 ### README existente
 Se ja existir `README.md` na raiz, leia antes de sobrescrever.
+
+### Licenca
+Verifique se existe `LICENSE` ou `LICENSE.*` na raiz. Se existir, identifique a
+licenca declarada (MIT, Apache-2.0, etc.) para preencher a secao de licenca. Se
+nao existir e o usuario nao tiver informado uma licenca, a secao sera **omitida**
+(ver PASSO 4) — nunca se assume MIT sem respaldo.
 
 ---
 
@@ -113,6 +127,13 @@ Gere as secoes na ordem abaixo. Inclua apenas as que tiverem conteudo real.
 - Nome do projeto em `# Titulo`
 - Uma linha descrevendo o que o app faz (sem jargao)
 - Badges: versao da linguagem, plataforma (se especifica), licenca
+- Se `.github/workflows/tests.yml` foi encontrado no PASSO 2, adicione o
+  badge de CI logo apos o titulo, antes de qualquer outra badge:
+  ```
+  ![Tests](https://github.com/{usuario}/{repo}/actions/workflows/tests.yml/badge.svg)
+  ```
+  Se nao foi possivel extrair usuario/repo do git remote, use o placeholder
+  `{usuario}/{repo}` e avise o usuario para substituir.
 
 ### Funcionalidades
 - Lista com bullet points do que o app faz
@@ -181,7 +202,12 @@ go test ./...
 - So dependencias de producao (nao dev/test)
 
 ### Licenca
-- Nome da licenca escolhida pelo usuario ou "MIT" como padrao
+- Se houver arquivo `LICENSE`/`LICENSE.*` na raiz: use o nome da licenca declarada nele.
+- Se o usuario informou uma licenca desejada: use-a (e sugira criar o arquivo `LICENSE`).
+- Se nao houver nenhum dos dois: **omita a secao** e, ao final, avise o usuario que o
+  projeto nao declara licenca (sugira adicionar um `LICENSE` se for open source).
+- Nunca afirme "MIT" (nem outra) sem arquivo ou instrucao do usuario — isso viola a
+  Regra Universal 1 (nunca inventar).
 
 ---
 
@@ -225,5 +251,7 @@ Antes de salvar, verifique:
 - [ ] A secao "Uso" descreve o que o app realmente faz ao rodar?
 - [ ] Nao ha informacao inventada (caminho, comando, comportamento)?
 - [ ] Se nao ha imagens, o usuario foi instruido sobre como adicionar depois?
+- [ ] Se nao ha arquivo LICENSE nem licenca informada, a secao foi omitida (nao inventou "MIT")?
+- [ ] `.github/workflows/tests.yml` foi verificado e badge incluido se existir?
 - [ ] O README esta completamente no idioma confirmado?
 - [ ] O arquivo foi salvo na raiz do projeto?

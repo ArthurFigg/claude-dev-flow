@@ -1,5 +1,5 @@
 ---
-name: Briefing de Sessao
+name: session-start
 description: Briefing de sessao. Invocar ao abrir projeto em andamento. Le CLAUDE.md, specs, git log e roda pytest para entregar resumo do estado atual e proxima acao.
 ---
 
@@ -64,9 +64,25 @@ CLAUDE.md nao encontrado. Este diretorio nao parece ser um projeto configurado.
 
 Liste todos os arquivos em `.claude/specs/`. Se o diretorio nao existir ou estiver vazio, registre "nenhuma spec encontrada" e continue.
 
-Para cada spec:
-- Verifique se o arquivo contem a linha `**Status:** concluida` (adicionada pela skill spec-close)
-- Classifique como **concluida** ou **pendente**
+Execute tambem:
+```bash
+git log --oneline --all
+```
+Extraia todas as mensagens de commit que comecem com "implementa " — cada uma corresponde a uma spec fechada pelo `/spec-close`.
+
+Para cada spec, classifique usando as duas fontes:
+
+| Arquivo diz | Git diz | Classificacao | Acao |
+|---|---|---|---|
+| concluida | commit existe | **concluida** | normal |
+| pendente | commit existe | **concluida** (git prevalece) | avisar divergencia no briefing |
+| concluida | commit nao existe | **concluida** (arquivo prevalece) | normal |
+| pendente | commit nao existe | **pendente** | normal |
+
+Quando o git contradizer o arquivo (linha `**Status:** concluida` ausente mas commit "implementa {nome}" existe), registre no briefing:
+```
+⚠️  Divergencia detectada: {nome} tem commit de implementacao mas Status ausente no arquivo.
+```
 
 Identifique a proxima spec a implementar:
 - Se houver resultado de `/spec-review` no CLAUDE.md ou em alguma spec, use a ordem recomendada
@@ -147,7 +163,8 @@ Regras de montagem:
 Antes de exibir o briefing, verifique:
 
 - [ ] CLAUDE.md foi lido e nome do projeto extraido?
-- [ ] Todas as specs foram classificadas como concluidas ou pendentes?
+- [ ] Todas as specs foram classificadas cruzando arquivo E git log?
+- [ ] Divergencias entre arquivo e git foram reportadas no briefing?
 - [ ] git log e git status foram executados?
 - [ ] pytest foi rodado?
 - [ ] Testes falhando aparecem no topo em destaque?

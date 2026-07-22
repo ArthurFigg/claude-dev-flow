@@ -1,6 +1,6 @@
 ---
 name: planejar-setup
-description: Planejador de setup de ambiente Python. Invocar ao iniciar projeto novo, com CLAUDE.md pronto, antes da primeira spec. Documenta decisoes (Python, deps, pastas, env) no CLAUDE.md - nao executa.
+description: Planejador de setup de ambiente Python. Invocar apos o /spec-review e antes de implementar. Le as specs prontas para planejar deps com precisao. Documenta decisoes (Python, deps, pastas, env) no CLAUDE.md - nao executa.
 ---
 
 # IDENTIDADE
@@ -105,14 +105,67 @@ as que so serao usadas em specs futuras.
 ## PASSO 3 — Apresentar e escrever no CLAUDE.md
 
 Mostre o plano completo no chat. Em seguida, adicione (ou atualize) a secao
-"Setup do ambiente" no CLAUDE.md com o mesmo conteudo, decisao por decisao
-com o motivo de cada uma.
+"Setup do ambiente" no CLAUDE.md usando obrigatoriamente o template abaixo —
+nao em prosa livre. O template garante que a execucao posterior seja fiel ao
+plano, sem ambiguidade de interpretacao.
+
+```markdown
+## Setup do ambiente
+
+**Python:** {versao} — {motivo da escolha}
+
+**Comandos de execucao:**
+```bash
+uv init --python {versao}
+uv add {dep1>=x,<y} {dep2>=x,<y}
+uv add --dev {dev_dep>=x,<y}
+```
+
+**Pastas a criar:**
+```bash
+mkdir -p {pasta1} {pasta2} {pasta3}
+touch {arquivo1/__init__.py} {arquivo2/__init__.py}
+```
+
+**Conteudo do `.env.example`:**
+```
+VAR_1=
+VAR_2=
+VAR_3=
+```
+
+**Dependencias que ficam de fora agora** (entram quando a spec chegar):
+- {dep}: spec {nome}
+- {dep}: spec {nome}
+
+**CI — `.github/workflows/tests.yml`:**
+```yaml
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run pytest -v
+```
+```
+
+Preencha cada bloco com os valores decididos no PASSO 2. Nao omita nenhuma
+subsecao — se nao houver valor (ex: nenhuma variavel de ambiente), escreva
+"nenhuma" em vez de suprimir o campo.
+
+O bloco de CI e sempre identico — nao varia por projeto. O `setup-uv` le
+a versao do Python automaticamente do `.python-version` gerado pelo `uv init`.
 
 ## PASSO 4 — Confirmar
 
 Informe que a secao foi adicionada ao CLAUDE.md e que, quando o usuario
-quiser, basta pedir a execucao (ex: "faca o setup com base no que
-documentamos") em conversa normal — sem skill.
+quiser executar, basta dizer: "execute o setup seguindo a secao 'Setup do
+ambiente' do CLAUDE.md" — o Claude Code vai ler os comandos exatos e
+executar sem precisar interpretar prosa.
 
 # RESTRICOES
 
@@ -137,6 +190,7 @@ Antes de encerrar, verifique:
       plano — o resto foi listado como futuro?
 - [ ] A secao "Setup do ambiente" foi escrita no CLAUDE.md com as mesmas
       decisoes e motivos do plano exibido no chat?
+- [ ] O bloco de CI (.github/workflows/tests.yml) foi incluido na secao?
 - [ ] O usuario foi informado de que a execucao e um pedido livre dele,
       fora desta skill?
 
@@ -144,26 +198,59 @@ Antes de encerrar, verifique:
 
 Exemplo do plano (chat + secao escrita no CLAUDE.md):
 
+Chat (resumo do plano):
 ```
 PLANO DE SETUP — projeto-exemplo
 
-Python: 3.12 (penultima estavel - 3.13 e muito recente, libs de PDF/grafico
+Python: 3.12 (penultima estavel — 3.13 muito recente, libs de PDF/grafico
 costumam demorar a dar suporte total)
 
-Dependencias (producao):
-  - sqlalchemy>=2.0,<3.0   (necessaria pra spec 01_persistencia)
-Dependencias (dev):
-  - pytest>=8.0,<9.0
+Producao: sqlalchemy>=2.0,<3.0 (spec 01_persistencia)
+Dev:      pytest>=8.0,<9.0
 
-Ficam de fora por agora (entram quando a spec chegar):
-  - pandas (spec 03), google-genai (spec 04), xhtml2pdf/jinja2/matplotlib
-    (spec 05), watchdog (spec 07)
+Ficam de fora agora: pandas (spec 03), google-genai (spec 04),
+xhtml2pdf/jinja2/matplotlib (spec 05), watchdog (spec 07)
 
-Pastas: src/__init__.py, src/persistencia/__init__.py, tests/, banco/
-
+Pastas: src/, src/persistencia/, tests/, banco/
 .env.example: GEMINI_API_KEY, GEMINI_MODEL, SMTP_USER, SMTP_PASSWORD,
-EMAIL_DESTINATARIO, NOME_NEGOCIO
+              EMAIL_DESTINATARIO, NOME_NEGOCIO
 
-Secao "Setup do ambiente" adicionada ao CLAUDE.md. Quando quiser, peca pra
-eu executar o setup com base nisso.
+Secao "Setup do ambiente" adicionada ao CLAUDE.md.
+Para executar: "execute o setup seguindo a secao 'Setup do ambiente' do CLAUDE.md"
+```
+
+Secao escrita no CLAUDE.md (template obrigatorio):
+```markdown
+## Setup do ambiente
+
+**Python:** 3.12 — penultima estavel; 3.13 muito recente para libs de PDF/grafico
+
+**Comandos de execucao:**
+```bash
+uv init --python 3.12
+uv add sqlalchemy>=2.0,<3.0
+uv add --dev pytest>=8.0,<9.0
+```
+
+**Pastas a criar:**
+```bash
+mkdir -p src/persistencia tests banco
+touch src/__init__.py src/persistencia/__init__.py
+```
+
+**Conteudo do `.env.example`:**
+```
+GEMINI_API_KEY=
+GEMINI_MODEL=
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_DESTINATARIO=
+NOME_NEGOCIO=
+```
+
+**Dependencias que ficam de fora agora** (entram quando a spec chegar):
+- pandas: spec 03
+- google-genai: spec 04
+- xhtml2pdf, jinja2, matplotlib: spec 05
+- watchdog: spec 07
 ```

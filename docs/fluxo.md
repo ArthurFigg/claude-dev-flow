@@ -107,8 +107,8 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 
 Para cada spec, na ordem recomendada pelo spec-review:
 
-**a)** Diga ao Claude Code: `"implemente seguindo .claude/specs/{nome}.md"`  
-A IA lê a spec e implementa o código + testes.
+**a)** Rode: `/implementar {nome_da_spec}`  
+A skill lê o campo `**Score:**` da spec e decide: se for pequena (≤ 5), implementa inline na própria sessão; se for grande (≥ 6), delega ao subagente `implementador-spec` (Sonnet), que implementa isolado e devolve só o relatório — sem carregar todo o código escrito na conversa principal. Nos dois casos, código + testes saem prontos e rodados.
 
 **b)** Quando terminar, rode: `/spec-close {nome_da_spec}`
 
@@ -116,7 +116,8 @@ A IA lê a spec e implementa o código + testes.
 - Lê a spec para extrair o título
 - Roda: `uv run pytest -v`
 - Se testes **passam**:
-  - Dispara o subagente `revisor-codigo`, que lê o `git diff` da spec e reporta problemas de correção, segurança, escopo ou convenção que o pytest não pega (ex: caso de borda que a spec exige mas nenhum teste cobre, segredo hardcoded)
+  - Revisa o `git diff` da spec contra quatro critérios (correção, segurança, escopo, convenção) que o pytest não pega — inline, se a implementação foi feita nesta mesma sessão, ou via subagente `revisor-codigo` (só leitura), se a sessão foi retomada (ex: caso de borda que a spec exige mas nenhum teste cobre, segredo hardcoded)
+  - Sincroniza o CLAUDE.md do projeto quando a spec declarou impacto (seção "Impacto no CLAUDE.md"), no mesmo commit
   - Se o revisor achar algo: mostra o achado e pergunta se você quer corrigir antes ou commitar mesmo assim — a decisão final é sua, o agente nunca corrige nem decide sozinho
   - Marca a spec como concluída no arquivo (adiciona data)
   - Faz o commit com mensagem derivada do título da spec
@@ -151,6 +152,27 @@ Não commite manualmente durante o ciclo de specs. O `/spec-close` é o único c
 
 ---
 
+### Etapa 8 — `/encerrar-projeto` (quando o projeto estiver pronto)
+
+**Quando:** quando o projeto está pronto para release — não necessariamente com todas as specs concluídas (algumas podem ter ficado fora do escopo de propósito).
+
+**O que faz:**
+- Roda `uv run pytest -v` — se algo falhar, bloqueia o encerramento
+- Valida o README contra o projeto real (não só checa existência)
+- Audita a coerência do CLAUDE.md com o estado atual do projeto
+- Cria uma tag de versão anotada e faz push
+- Registra no CLAUDE.md a data, versão, contagem de testes, commits e período do projeto
+
+**Por que é importante:** formaliza o fim do projeto com um estado verificado — testes verdes, documentação coerente e um ponto de restauração marcado no histórico.
+
+---
+
+### Referência rápida: quando usar o `/reabrir-spec`
+
+`/reabrir-spec {nome}` é o caminho oficial para alterar uma spec **já concluída**. Ele adiciona uma seção de "Revisão" com o que muda e por quê, e troca o status para "em revisão" — o próximo `/spec-close` gera um commit `revisa {título}` em vez de `implementa {título}`. Nunca edite uma spec fechada na mão: reabra primeiro, para o histórico registrar a mudança.
+
+---
+
 ### Referência rápida: quando usar o `/git-skill`
 
 `/git-skill` é reservado para commits **fora** do ciclo de specs:
@@ -171,7 +193,11 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
 | `/spec` | Cria a spec de uma feature |
 | `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
-| `/spec-close [nome]` | Fecha uma spec: pytest + subagente `revisor-codigo` + commit |
+| `/planejar-setup` | Decide versão do Python, deps e estrutura de pastas; documenta no CLAUDE.md |
+| `/implementar [nome]` | Implementa a spec: inline se pequena, via subagente `implementador-spec` se grande |
+| `/spec-close [nome]` | Fecha uma spec: pytest + revisão do diff + commit |
+| `/reabrir-spec [nome]` | Reabre uma spec concluída para nova revisão |
+| `/encerrar-projeto` | Encerramento formal: pytest + README + tag de versão |
 | `/session-start` | Briefing de retomada de sessão |
 | `/git-skill` | Commit fora do ciclo de specs |
 | `/readme` | Gera o README.md quando o projeto estiver pronto |
@@ -298,7 +324,7 @@ Quando você digita `/spec`, o Claude Code lê o arquivo `~/.claude/commands/spe
 
 ### 3.7 — O que a IA faz quando implementa uma spec
 
-Quando você diz `"implemente seguindo .claude/specs/busca_monstro.md"`, a IA:
+Quando você roda `/implementar busca_monstro` (ou implementa a spec diretamente), a IA:
 1. Lê a spec completa
 2. Lê o CLAUDE.md do projeto para entender a arquitetura
 3. Lê o CLAUDE.md global para as convenções de código
@@ -325,7 +351,7 @@ Até certo ponto, este fluxo dependia só de instrução em texto (a IA lê a re
 
 **Hook:** um script que o Claude Code executa automaticamente antes (ou depois) de uma ferramenta ser usada — por exemplo, antes de qualquer edição de arquivo. O hook deste fluxo (`check-spec-revisao.ps1`) roda antes de toda edição e verifica se existe alguma spec com `Revisão: pendente` no projeto atual. Se existir, a edição é recusada — não é um lembrete de texto que a IA pode ignorar por engano, é uma barreira técnica.
 
-**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa dois: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada) e `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo). Nenhum dos dois decide sozinho — os dois só reportam, e a skill principal (ou você) decide o que fazer com o achado.
+**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa três: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo, também só leitura) e `implementador-spec` (dentro do `/implementar`, rodando em Sonnet, este com permissão de escrita para gerar o código de specs grandes isolado do contexto principal). Os dois primeiros só reportam e nunca decidem sozinhos; o terceiro escreve o código mas devolve o controle para o `/spec-close` fazer o gate de testes e commit.
 
 **Por que isso importa mais do que parece:** escopo restrito de ferramentas é uma garantia técnica, não uma promessa de comportamento. Um subagente sem acesso a `Edit` ou `Write` fisicamente não consegue alterar código, mesmo que "quisesse" — diferente de só instruir "não edite nada" num prompt, que depende da IA seguir a instrução.
 

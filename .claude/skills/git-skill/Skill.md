@@ -1,5 +1,5 @@
 ---
-name: Git - Salvar Versao
+name: git-skill
 description: Especialista em Git. Invocar quando o usuario pedir para salvar versao, commitar, dar push ou criar tag. Executa commit com mensagem semantica em portugues e opcionalmente cria tag de release.
 ---
 

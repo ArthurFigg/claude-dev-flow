@@ -49,6 +49,8 @@ O arquivo gerado deve seguir este formato:
 
 **Ordem:** {posicao} de {total} (omitir se a spec for isolada, sem sequencia planejada com outras)
 **Depende de:** {lista de specs} ou "nenhuma"
+**Score:** {pontos calculados no PASSO 3.7}
+**Revisão:** pendente
 
 ## O que faz
 Uma frase clara descrevendo o comportamento externo da feature.
@@ -75,6 +77,11 @@ Uma frase clara descrevendo o comportamento externo da feature.
 ## Decisoes tomadas
 - Registro das escolhas feitas durante a entrevista
 - Formato: "Pergunta → Decisao (motivo se relevante)"
+
+## Impacto no CLAUDE.md
+- Trechos do CLAUDE.md que esta spec torna obsoletos/desatualizados ao ser implementada, e a atualizacao que o /spec-close deve aplicar ao fechar
+- Formato: "{secao do CLAUDE.md} → {o que muda}" (ex: "Estrutura de arquivos → remover bestiario.py; adicionar pacote bestiario/")
+- "nenhum" se a spec nao contradiz nada descrito no CLAUDE.md
 ```
 
 # REGRAS DE EXECUCAO
@@ -89,12 +96,23 @@ Leia o CLAUDE.md completo do projeto. Identifique:
 - Lista de melhorias possiveis (se houver)
 - Convencoes de codigo (idioma, estilo, testes)
 
+Se o CLAUDE.md nao existir ou estiver vazio, avise o usuario e sugira criar um antes de especificar features.
+
+Em seguida, verifique se `.claude/specs/_dominio.md` existe. Se existir, leia
+o arquivo completo e extraia:
+- **Entidades**: nomes e descricoes — use sempre esses nomes nas specs geradas
+- **Glossario**: termos preferidos e os que devem ser evitados — aplique
+  automaticamente ao nomear modulos, variaveis e mensagens na spec
+- **Bounded contexts**: se houver multiplos, identifique em qual contexto
+  esta feature se encaixa
+
+Se `_dominio.md` nao existir, continue normalmente sem ele.
+
 Anuncie em uma linha o que entendeu antes de continuar:
 ```
 Projeto: [nome] — [tipo]. Entendi a arquitetura e as regras.
+Dominio: [entidades encontradas no _dominio.md / "sem _dominio.md"]
 ```
-
-Se o CLAUDE.md nao existir ou estiver vazio, avise o usuario e sugira criar um antes de especificar features.
 
 ---
 
@@ -193,6 +211,8 @@ Antes de confirmar com o usuário, calcule o **score de tamanho** da spec somand
 | Arquivo JavaScript não-trivial (>50 linhas esperadas) | +2 |
 | Arquivo JavaScript trivial (<50 linhas) | +1 |
 
+Guarde o score final (apos qualquer divisao decidida abaixo) — ele vai pro campo `**Score:**` do cabecalho da spec no PASSO 5, usado depois pelo `/implementar` pra decidir entre implementar inline ou delegar a um agente.
+
 **Se o score for ≤ 5:** spec dentro do limite. Continue para o PASSO 4.
 
 **Se o score for 6 ou 7:** spec grande. Avise o usuário antes de confirmar:
@@ -227,6 +247,16 @@ Confirma a divisão? Ou prefere gerar a spec grande mesmo assim?
 
 ---
 
+## PASSO 3.8 — Mapear impacto no CLAUDE.md
+
+Compare o que esta spec cria, remove ou renomeia (secoes "Modulos afetados" e "Comportamento") com o que o CLAUDE.md afirma hoje (lido no PASSO 1). Identifique cada trecho do CLAUDE.md que a implementacao desta spec torna falso ou desatualizado — tipicamente: "Estrutura de arquivos", "Como rodar", "Schema do banco", "Tecnologias usadas", listas de "o que ja funciona / o que falta".
+
+Para cada trecho, registre na secao "Impacto no CLAUDE.md" da spec o par "{secao} → {atualizacao necessaria}". Se a spec nao contradiz nada do CLAUDE.md, registre "nenhum".
+
+Nao altere o CLAUDE.md aqui — a spec apenas declara o impacto. A aplicacao acontece no /spec-close, no mesmo commit que fecha a spec.
+
+---
+
 ## PASSO 4 — Confirmar antes de gerar
 
 Antes de gerar o arquivo, apresente um resumo curto no chat:
@@ -237,6 +267,7 @@ Faz: {uma frase}
 Modifica: {lista de modulos}
 Nao mexe em: {lista}
 Criterios: {quantidade} verificaveis
+Impacto no CLAUDE.md: {secoes que ficarao desatualizadas ou "nenhum"}
 
 Posso gerar o arquivo?
 ```
@@ -252,7 +283,7 @@ Crie o arquivo em `.claude/specs/{nome_em_snake_case}.md` seguindo a estrutura d
 Apos criar, confirme:
 ```
 Spec criada em .claude/specs/{nome}.md
-Para implementar: "implemente seguindo {nome}.md"
+Para implementar (depois de aprovada no /spec-review): /implementar {nome}
 ```
 
 ---
@@ -282,6 +313,7 @@ Nao altere o CLAUDE.md diretamente — apenas sugira a mudanca.
 - Nunca perguntar sobre decisoes ja registradas em specs existentes — usar o contexto do PASSO 1.5 diretamente
 - Nunca gerar spec com score ≥ 8 sem propor divisao e aguardar confirmacao do usuario
 - Nunca misturar JS nao-trivial e backend Python na mesma spec sem verificar o score primeiro
+- Nunca gerar spec sem a secao "Impacto no CLAUDE.md" preenchida (par "{secao} → {mudanca}" ou "nenhum")
 
 # CRITERIO DE QUALIDADE
 
@@ -298,8 +330,9 @@ Antes de entregar a spec, verifique internamente:
 - [ ] Consequencias de UX de decisoes tecnicas foram documentadas ou descartadas explicitamente?
 - [ ] Specs existentes foram lidas e suas decisoes foram reaproveitadas sem re-perguntar?
 - [ ] A secao "Nao mexer" inclui modulos de outras specs que esta feature nao precisa tocar?
-- [ ] O score de tamanho foi calculado (PASSO 3.7)?
+- [ ] O score de tamanho foi calculado (PASSO 3.7) e registrado no campo `**Score:**` do cabecalho?
 - [ ] Se score ≥ 8, a divisao foi proposta e o usuario confirmou antes de gerar?
+- [ ] A secao "Impacto no CLAUDE.md" foi preenchida cruzando o que a spec muda com o que o CLAUDE.md afirma (PASSO 3.8)?
 
 # REFERENCIAS
 

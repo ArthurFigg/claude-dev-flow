@@ -29,14 +29,18 @@ claude-dev-flow/
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
       spec/                    # especifica uma feature com critérios verificáveis
       spec-review/             # revisa o conjunto de specs em paralelo, define ordem
-      spec-close/              # roda pytest + revisor-codigo, marca concluída, commita
-      session-start/           # briefing de retomada: testes + git + specs em 25 linhas
       planejar-setup/          # decide versão do Python, deps e estrutura de pastas
-      git-skill/                # commit semântico com revisão de diff
+      implementar/             # decide inline vs agente por score e implementa a spec
+      spec-close/              # roda pytest + revisão de diff, marca concluída, commita
+      reabrir-spec/            # reabre uma spec concluída para nova revisão
+      encerrar-projeto/        # encerramento formal: pytest + README + tag de versão
+      session-start/           # briefing de retomada: testes + git + specs em 25 linhas
+      git-skill/               # commit semântico com revisão de diff
       readme/                  # gera README baseado nos arquivos reais do projeto
     agents/
       revisor-codigo.md         # subagente read-only: audita o diff antes de cada commit
       verificador-spec.md       # subagente read-only: verifica specs em paralelo no spec-review
+      implementador-spec.md     # subagente Sonnet: implementa specs grandes isoladas do contexto principal
     hooks/
       check-spec-revisao.ps1    # bloqueia edição de código com spec "Revisão: pendente"
     settings.json.example       # como registrar o hook acima num projeto (copie e adapte)
@@ -61,22 +65,28 @@ Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill co
 ~/.claude/commands/dominio.md
 ~/.claude/commands/spec.md
 ~/.claude/commands/spec-review.md
-~/.claude/commands/spec-close.md
-~/.claude/commands/session-start.md
 ~/.claude/commands/planejar-setup.md
+~/.claude/commands/implementar.md
+~/.claude/commands/spec-close.md
+~/.claude/commands/reabrir-spec.md
+~/.claude/commands/encerrar-projeto.md
+~/.claude/commands/session-start.md
 ~/.claude/commands/git-skill.md
 ~/.claude/commands/readme.md
 ```
+
+> Alternativamente, cada skill pode ser instalada como `~/.claude/skills/{nome}/Skill.md` (mesmo conteúdo) — é o formato usado neste repositório.
 
 No Windows, `~/.claude/` equivale a `C:\Users\<usuario>\.claude\`.
 
 ### 3. (Opcional) Ative os agentes e o hook de gate
 
-Os dois subagentes (`revisor-codigo` e `verificador-spec`) são chamados automaticamente pelas skills `spec-close` e `spec-review` — para ativá-los, copie os dois arquivos para `~/.claude/agents/`:
+Os subagentes são chamados automaticamente pelas skills: `revisor-codigo` e `verificador-spec` pelo `spec-close`/`spec-review` (só leitura), e `implementador-spec` pelo `implementar` quando a spec é grande (score ≥ 6). Para ativá-los, copie os arquivos para `~/.claude/agents/`:
 
 ```
 ~/.claude/agents/revisor-codigo.md
 ~/.claude/agents/verificador-spec.md
+~/.claude/agents/implementador-spec.md
 ```
 
 O hook (`.claude/hooks/check-spec-revisao.ps1`) bloqueia edição de código enquanto alguma spec do projeto estiver com `Revisão: pendente`. Ele é opcional e configurado **por projeto**, não globalmente: copie a pasta `.claude/hooks/` para o seu projeto e registre o hook copiando `.claude/settings.json.example` para `.claude/settings.json` do projeto (ajuste o caminho se necessário — `${CLAUDE_PROJECT_DIR}` é resolvido automaticamente pelo Claude Code).
@@ -89,7 +99,7 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 
 ---
 
-## O fluxo em 7 etapas
+## O fluxo em 8 etapas
 
 ```
 1. Criar CLAUDE.md do projeto
@@ -98,8 +108,9 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 4. /spec                  → especifica cada feature (repetir para cada uma)
 5. /spec-review           → revisa o conjunto em paralelo (subagentes), detecta conflitos, define ordem
 6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
-   implementar + /spec-close → para cada spec: pytest passa → revisor-codigo audita o diff → commita
-7. /session-start         → usar no início de cada sessão subsequente
+7. Para cada spec: /implementar (inline ou agente, por score) → /spec-close (pytest + revisão do diff → commita)
+8. /session-start         → no início de cada sessão subsequente
+   /encerrar-projeto      → quando o projeto estiver pronto para release
 ```
 
 Se o hook opcional estiver ativo, a etapa 5 também vira uma barreira técnica: nenhuma edição de código passa enquanto houver spec com `Revisão: pendente` — não é mais só uma instrução que a IA segue por texto.
