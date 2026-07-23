@@ -67,10 +67,12 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 **O que faz:**
 - Verifica que o projeto realmente expõe uma API — senão encerra, explicando a diferença entre provedor e consumidor
 - Deriva os **recursos** da API das entidades do `_dominio.md`
-- Propõe, para você confirmar (nunca decide sozinho): endpoints (método + caminho + schemas de request/response), formato de erro (RFC 7807), status codes, paginação, autenticação e versionamento (`/v1`)
-- Gera `.claude/specs/_contrato.md` — o documento-decisão do contrato
+- Propõe, para você confirmar (nunca decide sozinho): endpoints (método + caminho + schemas de request/response), formato de erro (RFC 7807), status codes, paginação, autenticação e versionamento (`/api/v1`)
+- Gera e valida `openapi.yaml` (OpenAPI 3.1) na raiz do projeto — o contrato no padrão de mercado
 
-**Por que é importante:** define a superfície da API **antes** de implementar os endpoints (contract-first). Cada `/spec` de endpoint depois implementa uma fatia do contrato, referenciando-o em vez de redefinir — o que dá ao `verificador-spec` uma fonte de verdade para pegar divergência de interface. O `_contrato.md` é decisão em markdown; o **OpenAPI real é emitido pelo FastAPI** (`/docs`) na implementação, a partir dos modelos Pydantic — não se escreve YAML à mão (é o que evita o cargo cult). Pact e afins só fariam sentido com times de consumidor separados, que um projeto solo não tem.
+**Por que é importante:** define a superfície da API **antes** de implementar os endpoints (contract-first). O `openapi.yaml` é o artefato de mercado: abre no Swagger UI (cole em `editor.swagger.io`), alimenta client SDKs e contract testing, e é ele mesmo a documentação da API. Cada `/spec` de endpoint depois implementa uma fatia do contrato, referenciando `operationId`/schema em vez de redefinir — o que dá ao `verificador-spec` uma fonte de verdade para pegar divergência de interface.
+
+A implementação é **code-first com FastAPI** (idiomático em Python): os modelos Pydantic materializam os schemas do contrato e o FastAPI serve o Swagger em `/docs`. Para não haver **duas fontes de verdade** divergindo, um **teste de contrato** compara o OpenAPI que o FastAPI gera com o `openapi.yaml` commitado — se o código sair do contrato, o pytest falha (é o `schemathesis` que roda esses casos). Pact e afins só fariam sentido com times de consumidor separados, que um projeto solo não tem.
 
 ---
 
@@ -81,7 +83,7 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 **O que faz:**
 - Lê o CLAUDE.md do projeto para entender a arquitetura
 - Lê specs existentes em `.claude/specs/` para evitar conflitos
-- Lê o `_contrato.md` (se houver): specs de endpoint implementam fatias do contrato, referenciando-o sem redefinir
+- Lê o `openapi.yaml` (se houver): specs de endpoint implementam fatias do contrato, referenciando operationId/schema sem redefinir
 - Faz perguntas sobre o comportamento da feature (uma por vez)
 - Verifica casos negativos (o que acontece com input inválido, estado errado)
 - Gera o arquivo `.claude/specs/{nome_da_feature}.md`
@@ -206,7 +208,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 |---|---|
 | `/auditar-claude-md` | Valida o CLAUDE.md antes de codar |
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
-| `/contrato` | (Projeto web) Define recursos, endpoints e convenções da API; gera `_contrato.md` |
+| `/contrato` | (Projeto web) Define recursos, endpoints e convenções da API; gera `openapi.yaml` (OpenAPI 3.1) |
 | `/spec` | Cria a spec de uma feature |
 | `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
 | `/planejar-setup` | Decide versão do Python, deps e estrutura de pastas; documenta no CLAUDE.md |

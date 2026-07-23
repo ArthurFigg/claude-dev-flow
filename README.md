@@ -27,7 +27,7 @@ claude-dev-flow/
     skills/
       auditar-claude-md/       # valida o CLAUDE.md antes de qualquer código
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
-      contrato/                # (projeto web) define a superfície da API: recursos, endpoints, schemas
+      contrato/                # (projeto web) gera openapi.yaml (OpenAPI 3.1): recursos, endpoints, schemas
       spec/                    # especifica uma feature com critérios verificáveis
       spec-review/             # revisa o conjunto de specs em paralelo, define ordem
       planejar-setup/          # decide versão do Python, deps e estrutura de pastas

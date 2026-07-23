@@ -25,7 +25,7 @@ Leia a spec alvo completa. Extraia: "Modulos afetados", interfaces definidas (as
 
 Leia o CLAUDE.md do projeto. Extraia as regras que geram obrigacao verificavel: convencao de idioma, estrutura proibida (ex: sem `utils.py`, sem organizacao por tipo), convencao de tratamento de erro, versoes de dependencia documentadas em "Setup do ambiente".
 
-Se existir `.claude/specs/_contrato.md` e a spec alvo for de um endpoint (menciona rota HTTP, metodo, request/response), leia o contrato e extraia o endpoint e os schemas que a spec deve implementar — o contrato e fonte de verdade da interface HTTP, no mesmo nivel do CLAUDE.md.
+Se existir um `openapi.yaml` na raiz do projeto e a spec alvo for de um endpoint (menciona rota HTTP, metodo, request/response), leia o contrato e extraia o endpoint (path/operationId) e os schemas que a spec deve implementar — o `openapi.yaml` e fonte de verdade da interface HTTP, no mesmo nivel do CLAUDE.md.
 
 ## PASSO 2 — Verificar a spec alvo contra o CLAUDE.md
 
@@ -35,7 +35,7 @@ Compare o conteudo da spec alvo com as regras extraidas. Categorize cada diverge
 
 **Conflito critico** — spec cria estrutura proibida (`utils.py`, organizacao por tipo de arquivo), usa tratamento de erro incompativel com o padrao do CLAUDE.md, referencia versao de dependencia diferente da documentada em "Setup do ambiente", ou traducao de nome ambigua (mais de uma opcao razoavel).
 
-**Conflito critico [contrato]** — spec de endpoint diverge do `_contrato.md`: caminho ou metodo HTTP diferente, campo de request/response ausente ou com tipo diferente, ou status/erro fora do que o contrato define. Reporte na secao "CLAUDE.md - conflito critico" do relatorio com o prefixo `[contrato]` — quem chama agrega essa secao como conflito critico automaticamente, sem precisar de secao nova.
+**Conflito critico [contrato]** — spec de endpoint diverge do `openapi.yaml`: caminho ou metodo HTTP diferente, campo de request/response ausente ou com tipo diferente, ou status/erro fora do que o contrato define. Reporte na secao "CLAUDE.md - conflito critico" do relatorio com o prefixo `[contrato]` — quem chama agrega essa secao como conflito critico automaticamente, sem precisar de secao nova.
 
 ## PASSO 3 — Verificar a spec alvo contra cada spec recebida na lista
 

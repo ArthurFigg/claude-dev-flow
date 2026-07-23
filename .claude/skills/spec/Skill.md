@@ -108,19 +108,21 @@ o arquivo completo e extraia:
 
 Se `_dominio.md` nao existir, continue normalmente sem ele.
 
-Em seguida, se `.claude/specs/_contrato.md` existir (projeto que expoe API HTTP),
-leia-o. Ele define a superficie da API acordada — recursos, endpoints, schemas de
-request/response, formato de erro (RFC 7807) e versionamento. Quando esta spec for
+Em seguida, se existir um `openapi.yaml` na raiz (projeto que expoe API HTTP),
+leia-o. Ele e o contrato da API no padrao OpenAPI 3.1 — recursos, endpoints, schemas
+de request/response, formato de erro (RFC 7807) e versionamento. Quando esta spec for
 de um endpoint, ela IMPLEMENTA uma fatia do contrato: referencie na secao "Decisoes
-tomadas" o(s) endpoint(s) e schema(s) do `_contrato.md` que a spec cobre, sem
-redefini-los, e trate o resto do contrato como "Nao mexer". Se `_contrato.md` nao
-existir, continue sem ele.
+tomadas" o(s) operationId/path e schema(s) do `openapi.yaml` que a spec cobre, sem
+redefini-los, e trate o resto do contrato como "Nao mexer". Inclua tambem, nos
+"Criterios verificaveis", o teste de contrato que compara o OpenAPI gerado pelo
+FastAPI com o `openapi.yaml` commitado (barra drift). Se nao houver `openapi.yaml`,
+continue sem ele.
 
 Anuncie em uma linha o que entendeu antes de continuar:
 ```
 Projeto: [nome] — [tipo]. Entendi a arquitetura e as regras.
 Dominio: [entidades encontradas no _dominio.md / "sem _dominio.md"]
-Contrato: [recursos/endpoints do _contrato.md / "sem _contrato.md"]
+Contrato: [recursos/endpoints do openapi.yaml / "sem openapi.yaml"]
 ```
 
 ---
@@ -338,7 +340,7 @@ Antes de entregar a spec, verifique internamente:
 - [ ] Casos negativos (parametro ausente/invalido/estado errado) foram verificados para cada endpoint?
 - [ ] Consequencias de UX de decisoes tecnicas foram documentadas ou descartadas explicitamente?
 - [ ] Specs existentes foram lidas e suas decisoes foram reaproveitadas sem re-perguntar?
-- [ ] Se ha `_contrato.md` e esta spec e de endpoint, ela referencia a fatia do contrato (endpoint + schema) sem redefinir, e o resto do contrato entrou em "Nao mexer"?
+- [ ] Se ha `openapi.yaml` e esta spec e de endpoint, ela referencia a fatia do contrato (operationId/path + schema) sem redefinir, exige o teste de contrato nos criterios, e o resto entrou em "Nao mexer"?
 - [ ] A secao "Nao mexer" inclui modulos de outras specs que esta feature nao precisa tocar?
 - [ ] O score de tamanho foi calculado (PASSO 3.7) e registrado no campo `**Score:**` do cabecalho?
 - [ ] Se score ≥ 8, a divisao foi proposta e o usuario confirmou antes de gerar?

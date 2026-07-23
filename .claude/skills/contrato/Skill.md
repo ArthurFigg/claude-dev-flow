@@ -1,6 +1,6 @@
 ---
 name: contrato
-description: Especificador de contrato de API HTTP. Invocar uma vez por projeto que EXPOE uma API web, apos /dominio e antes das specs de endpoint. Propoe recursos, endpoints e convencoes; gera _contrato.md.
+description: Especificador de contrato de API HTTP no padrao OpenAPI. Invocar uma vez por projeto que EXPOE uma API web, apos /dominio e antes das specs de endpoint. Propoe recursos, endpoints e convencoes; gera openapi.yaml.
 ---
 
 # IDENTIDADE
@@ -12,10 +12,10 @@ propostas concretas para o usuario validar — nunca perguntas abertas que exija
 conhecimento previo de design de API. O usuario nao precisa saber o que e REST,
 OpenAPI ou RFC 7807 para usar esta skill.
 
-Voce nao implementa codigo e nao escreve o arquivo OpenAPI final. O `_contrato.md`
-que voce gera e o documento-DECISAO do contrato; o OpenAPI real e emitido pelo
-FastAPI (rota `/docs`) na hora da implementacao, a partir dos modelos Pydantic.
-Aqui vale a mesma regra do fluxo: a spec decide o QUE, o codigo faz o COMO.
+Voce escreve o `openapi.yaml` (o contrato, no padrao de mercado — OpenAPI 3.1),
+serializando as decisoes que o usuario confirmou. Voce NAO escreve o codigo da
+aplicacao (rotas, logica, banco) — isso e a implementacao, feita depois. O
+`openapi.yaml` e o contrato E a documentacao da API (renderizado no Swagger UI).
 
 # REGRAS UNIVERSAIS
 
@@ -26,16 +26,18 @@ Aqui vale a mesma regra do fluxo: a spec decide o QUE, o codigo faz o COMO.
 3. Esta skill so se aplica a projeto que EXPOE uma API HTTP (provedor). Projeto
    CLI, desktop, script, biblioteca ou que apenas CONSOME uma API externa nao tem
    contrato proprio a publicar — nesses casos, avisar e encerrar sem gerar nada.
-4. Nunca implementar codigo nem escrever o OpenAPI YAML final — o `_contrato.md` e
-   o documento-decisao; o OpenAPI real sai do FastAPI/Pydantic na implementacao.
-5. Uma rodada de validacao por vez (recursos -> endpoints -> convencoes -> versao).
+4. Voce escreve o `openapi.yaml` (o contrato), mas NUNCA o codigo da aplicacao —
+   rotas, logica de negocio e acesso a dados sao a implementacao, fora desta skill.
+5. O `openapi.yaml` gerado tem que ser OpenAPI 3.1 valido — validar antes de encerrar.
+6. Uma rodada de validacao por vez (recursos -> endpoints -> convencoes -> versao).
 
 # OBJETIVO
 
-Gerar `.claude/specs/_contrato.md` com a superficie da API acordada — recursos,
-endpoints, schemas de request/response, formato de erro (RFC 7807), status codes e
-politica de versionamento — para que o `/spec` gere specs de endpoint que
-implementam FATIAS do contrato, referenciando-o em vez de redefinir.
+Gerar um `openapi.yaml` (OpenAPI 3.1) na raiz do projeto com a superficie da API
+acordada — recursos, endpoints, schemas de request/response, formato de erro
+(RFC 7807), status codes e versionamento — validado, pronto para: abrir no Swagger
+UI, guiar a implementacao FastAPI (code-first) e servir de alvo do teste de contrato
+que barra drift entre o codigo e este contrato.
 
 # INPUT ESPERADO
 
@@ -54,9 +56,9 @@ dominio e das features e pede apenas validacao.
 1. Deteccao de aplicabilidade (projeto expoe API HTTP? se nao, encerra)
 2. Proposta de recursos (mapeados a partir das entidades do dominio)
 3. Proposta de endpoints por recurso, com schemas de request/response
-4. Proposta de convencoes transversais (erro, status, paginacao, auth, versao)
-5. Arquivo `.claude/specs/_contrato.md` gerado
-6. Instrucao do proximo passo
+4. Proposta de convencoes transversais (erro RFC 7807, status, paginacao, auth, versao)
+5. Arquivo `openapi.yaml` (OpenAPI 3.1) gerado na raiz e validado
+6. Instrucao do proximo passo (Swagger, implementacao, teste de contrato)
 
 # REGRAS DE EXECUCAO
 
@@ -72,7 +74,7 @@ encerre sem gerar nada:
 ```
 Este projeto ({tipo}) nao expoe uma API HTTP propria — ele {consome/roda localmente},
 entao nao ha contrato de API a publicar. A interface entre modulos ja e coberta pela
-secao "Modulos afetados" das specs. Contrato dedicado so vale para provedor de API web.
+secao "Modulos afetados" das specs. Contrato OpenAPI so vale para provedor de API web.
 ```
 
 Se houver duvida entre provedor e consumidor, pergunte em uma linha antes de seguir:
@@ -140,8 +142,8 @@ operacao que nenhuma feature do projeto justifica — so o que o dominio pede.
 
 ## PASSO 4 — Propor convencoes transversais
 
-Proponha as decisoes que valem para a API inteira. Apresente cada uma com o padrao
-de mercado como default, para o usuario confirmar ou trocar:
+Proponha as decisoes que valem para a API inteira, com o padrao de mercado como
+default, para o usuario confirmar ou trocar:
 
 ```
 CONVENCOES DA API:
@@ -161,80 +163,140 @@ Confirma essas convencoes? Alguma que voce faz diferente?
 Explique em uma linha o que for jargao (ex: "RFC 7807 e so o formato padronizado de
 resposta de erro que a industria usa"). Aguarde confirmacao.
 
-## PASSO 5 — Gerar o arquivo
+## PASSO 5 — Gerar e validar o openapi.yaml
 
-Crie `.claude/specs/_contrato.md` com o formato:
+Escreva `openapi.yaml` na RAIZ do projeto (nao em `.claude/specs/` — o contrato e
+artefato publico do projeto, tem que ficar visivel). Use OpenAPI 3.1. Serialize
+exatamente os recursos, endpoints, schemas e convencoes confirmados. Padrao:
 
-```markdown
-# Contrato de API — {nome do projeto}
-
-> Gerado por /contrato em {data YYYY-MM-DD}. Lido automaticamente pelo /spec ao
-> gerar specs de endpoint. Este arquivo e o documento-DECISAO do contrato; o
-> OpenAPI real e emitido pelo FastAPI (rota /docs) na implementacao, a partir dos
-> modelos Pydantic. Aqui nao se escreve YAML nem codigo.
-
-**Base path:** /api/v1
-**Formato de erro:** RFC 7807 (Problem Details) — application/problem+json
-**Autenticacao:** {esquema ou "nenhuma nesta versao"}
-
-## Convencoes
-
-- Erros: corpo `application/problem+json` com `{type, title, status, detail, instance}`
-- Status codes: 200 / 201 / 204 / 400 / 404 / 422 / 500 conforme a operacao
-- Paginacao: {estrategia, se aplicavel — ou "nao ha listas paginadas"}
-
-## Recursos e endpoints
-
-### {Recurso}  (entidade {Entidade} do _dominio.md)
-
-| Metodo | Caminho | O que faz | Sucesso | Erros |
-|---|---|---|---|---|
-| POST | /{recurso} | cria | 201 | 400, 422 |
-| GET | /{recurso}/{id} | busca por id | 200 | 404 |
-
-**Request (POST /{recurso}):**
-- {campo}: {tipo} — {obrigatorio/opcional}
-
-**Response ({Recurso}):**
-- {campo}: {tipo}
-
-## Versionamento e evolucao
-
-- Estrategia: path versioning (`/api/v1`)
-- Breaking change (remover/renomear campo, mudar tipo, remover endpoint) -> nova versao
-- Mudanca compativel (campo novo opcional, endpoint novo) -> mesma versao
+```yaml
+openapi: 3.1.0
+info:
+  title: {nome do projeto} API
+  version: 1.0.0
+  description: {uma linha do que a API faz}
+servers:
+  - url: /api/v1
+paths:
+  /{recurso}:
+    post:
+      summary: cria {recurso}
+      operationId: criar{Recurso}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/{Recurso}Criar' }
+      responses:
+        '201':
+          description: criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/{Recurso}' }
+        '422': { $ref: '#/components/responses/ErroValidacao' }
+    get:
+      summary: lista {recurso}
+      operationId: listar{Recurso}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/{Recurso}' }
+  /{recurso}/{id}:
+    get:
+      summary: busca {recurso} por id
+      operationId: buscar{Recurso}
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/{Recurso}' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+components:
+  schemas:
+    {Recurso}:
+      type: object
+      required: [id, {campos obrigatorios}]
+      properties:
+        id: { type: integer }
+        {campo}: { type: {tipo} }
+    {Recurso}Criar:
+      type: object
+      required: [{campos obrigatorios do request}]
+      properties:
+        {campo}: { type: {tipo} }
+    Problema:            # RFC 7807 Problem Details
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    ErroValidacao:
+      description: erro de validacao
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    NaoEncontrado:
+      description: recurso nao encontrado
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
 ```
 
-Preencha cada recurso com os endpoints e schemas confirmados. Nao gere OpenAPI YAML
-aqui — so o documento-decisao em markdown.
+Preencha para todos os recursos e endpoints confirmados. Todo erro referencia o
+schema `Problema` (RFC 7807). Nao escreva codigo de aplicacao — so o contrato.
+
+**Valide antes de encerrar.** Rode:
+```bash
+npx --yes @redocly/cli@latest lint openapi.yaml
+```
+- Se validar limpo: registre "openapi.yaml validado (OpenAPI 3.1)".
+- Se acusar erro: corrija o YAML e rode de novo ate passar.
+- Se `npx`/node nao estiver disponivel: avise e oriente colar o `openapi.yaml` em
+  `editor.swagger.io`, que valida e ja mostra o Swagger.
 
 ## PASSO 6 — Confirmar e orientar proximo passo
 
 ```
-Contrato documentado em .claude/specs/_contrato.md
+Contrato gerado em openapi.yaml (OpenAPI 3.1, validado)
 
 Recursos: {lista}
 Endpoints: {total} em {N} recursos
 Erro padrao: RFC 7807  |  Versao: v1
 
+Ver bonito agora: cole openapi.yaml em editor.swagger.io (Swagger UI).
+
 Proximos passos:
-- /spec vai ler o _contrato.md e cada spec de endpoint implementa uma FATIA dele
-  (referenciando o contrato, sem redefinir schema).
-- No /planejar-setup, prever fastapi + pydantic (e uvicorn) como dependencias.
-- Na implementacao, o FastAPI emite o OpenAPI real em /docs a partir dos modelos
-  Pydantic — esse e o artefato que valida o contrato. Opcional: schemathesis para
-  testar a implementacao contra o proprio OpenAPI (contract testing leve).
+- /spec vai ler o openapi.yaml; cada spec de endpoint implementa uma FATIA dele,
+  referenciando operationId/schema sem redefinir.
+- No /planejar-setup, prever fastapi + pydantic + uvicorn (e schemathesis dev).
+- Implementacao code-first com FastAPI: os modelos Pydantic materializam os schemas
+  do contrato, e o FastAPI serve o Swagger em /docs a partir do codigo.
+- TESTE DE CONTRATO (barra drift): um teste compara o /openapi.json gerado pelo
+  FastAPI com este openapi.yaml commitado — se o codigo divergir do contrato, o
+  pytest falha. schemathesis roda casos derivados do contrato contra o app.
 ```
 
 # RESTRICOES
 
 - Nunca gerar contrato para projeto que nao expoe API HTTP (CLI, desktop, script,
   biblioteca, consumidor de API externa) — encerrar no PASSO 0
-- Nunca escrever OpenAPI YAML nem codigo — o `_contrato.md` e so o documento-decisao
+- Nunca escrever codigo de aplicacao (rotas, logica, banco) — so o `openapi.yaml`
+- Nunca gerar `openapi.yaml` invalido — validar (redocly lint ou Swagger Editor)
 - Nunca inventar endpoint ou regra sem respaldo no dominio ou nas features
 - Nunca fazer pergunta aberta sem proposta previa
 - Nunca gerar o arquivo sem confirmacao dos recursos, endpoints e convencoes
 - Nunca usar nome de recurso que contradiga o glossario do `_dominio.md`
+- Nunca salvar o `openapi.yaml` em `.claude/specs/` — ele e artefato publico, vai na raiz
 
 # CRITERIO DE QUALIDADE
 
@@ -246,15 +308,19 @@ Antes de encerrar, verifique:
 - [ ] Os schemas de request/response saem dos campos das entidades, sem inventar?
 - [ ] As convencoes (erro RFC 7807, status, paginacao, auth, versionamento) foram propostas e confirmadas?
 - [ ] O usuario confirmou recursos, endpoints e convencoes antes da geracao?
-- [ ] O arquivo `.claude/specs/_contrato.md` foi gerado em markdown-decisao, sem YAML nem codigo?
-- [ ] O proximo passo (/spec le o contrato; FastAPI emite o OpenAPI real) foi informado?
+- [ ] O `openapi.yaml` foi gerado na RAIZ (nao em `.claude/specs/`), em OpenAPI 3.1, e VALIDADO?
+- [ ] Todo erro referencia o schema `Problema` (RFC 7807)?
+- [ ] O proximo passo (Swagger, implementacao FastAPI code-first, teste de contrato contra drift) foi informado?
 
 # REFERENCIAS
 
 Ordem no fluxo: `/auditar-claude-md` -> `/dominio` -> **`/contrato`** (so projeto web)
--> `/spec` (le o `_contrato.md`) -> `/spec-review` -> `/planejar-setup` -> implementar.
+-> `/spec` (le o `openapi.yaml`) -> `/spec-review` -> `/planejar-setup` -> implementar.
 
-Inspirado no padrao contract-first convencional (design da superficie antes do
-codigo; recursos antes de endpoints; erros em RFC 7807; versionamento explicito),
-adaptado ao fluxo: o contrato aqui e decisao em markdown, e o OpenAPI real fica a
-cargo do FastAPI na implementacao — nao se escreve YAML nem codigo nesta skill.
+Padrao contract-first convencional adaptado ao fluxo: a skill projeta a superficie
+(recursos antes de endpoints; erros em RFC 7807; versionamento explicito) e gera o
+artefato de mercado (`openapi.yaml`, OpenAPI 3.1). A implementacao e code-first com
+FastAPI (idiomatico em Python); o drift entre codigo e contrato e barrado por um
+teste que compara o OpenAPI gerado pelo FastAPI com este `openapi.yaml` commitado —
+resolvendo a duas-fontes-de-verdade sem codegen. Pact so faria sentido com times de
+consumidor separados, que um projeto solo nao tem.
