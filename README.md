@@ -27,6 +27,7 @@ claude-dev-flow/
     skills/
       auditar-claude-md/       # valida o CLAUDE.md antes de qualquer código
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
+      contrato/                # (projeto web) define a superfície da API: recursos, endpoints, schemas
       spec/                    # especifica uma feature com critérios verificáveis
       spec-review/             # revisa o conjunto de specs em paralelo, define ordem
       planejar-setup/          # decide versão do Python, deps e estrutura de pastas
@@ -63,6 +64,7 @@ Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill co
 ```
 ~/.claude/commands/auditar-claude-md.md
 ~/.claude/commands/dominio.md
+~/.claude/commands/contrato.md
 ~/.claude/commands/spec.md
 ~/.claude/commands/spec-review.md
 ~/.claude/commands/planejar-setup.md
@@ -105,6 +107,7 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 1. Criar CLAUDE.md do projeto
 2. /auditar-claude-md     → valida gaps e inconsistências antes de codar
 3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)
+   /contrato              → (só projeto web) define a superfície da API antes das specs de endpoint
 4. /spec                  → especifica cada feature (repetir para cada uma)
 5. /spec-review           → revisa o conjunto em paralelo (subagentes), detecta conflitos, define ordem
 6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md

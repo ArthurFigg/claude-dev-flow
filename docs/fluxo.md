@@ -60,6 +60,20 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 
 ---
 
+### Etapa 3.5 — `/contrato` (só projeto web, uma vez)
+
+**Quando:** logo após o `/dominio`, **se o projeto expõe uma API HTTP** (é provedor de endpoints, não um CLI nem um consumidor de API externa). Projetos que não servem API pulam esta etapa.
+
+**O que faz:**
+- Verifica que o projeto realmente expõe uma API — senão encerra, explicando a diferença entre provedor e consumidor
+- Deriva os **recursos** da API das entidades do `_dominio.md`
+- Propõe, para você confirmar (nunca decide sozinho): endpoints (método + caminho + schemas de request/response), formato de erro (RFC 7807), status codes, paginação, autenticação e versionamento (`/v1`)
+- Gera `.claude/specs/_contrato.md` — o documento-decisão do contrato
+
+**Por que é importante:** define a superfície da API **antes** de implementar os endpoints (contract-first). Cada `/spec` de endpoint depois implementa uma fatia do contrato, referenciando-o em vez de redefinir — o que dá ao `verificador-spec` uma fonte de verdade para pegar divergência de interface. O `_contrato.md` é decisão em markdown; o **OpenAPI real é emitido pelo FastAPI** (`/docs`) na implementação, a partir dos modelos Pydantic — não se escreve YAML à mão (é o que evita o cargo cult). Pact e afins só fariam sentido com times de consumidor separados, que um projeto solo não tem.
+
+---
+
 ### Etapa 4 — `/spec` (repetir para cada feature)
 
 **Quando:** para cada feature que você quer implementar.
@@ -67,6 +81,7 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 **O que faz:**
 - Lê o CLAUDE.md do projeto para entender a arquitetura
 - Lê specs existentes em `.claude/specs/` para evitar conflitos
+- Lê o `_contrato.md` (se houver): specs de endpoint implementam fatias do contrato, referenciando-o sem redefinir
 - Faz perguntas sobre o comportamento da feature (uma por vez)
 - Verifica casos negativos (o que acontece com input inválido, estado errado)
 - Gera o arquivo `.claude/specs/{nome_da_feature}.md`
@@ -191,6 +206,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 |---|---|
 | `/auditar-claude-md` | Valida o CLAUDE.md antes de codar |
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
+| `/contrato` | (Projeto web) Define recursos, endpoints e convenções da API; gera `_contrato.md` |
 | `/spec` | Cria a spec de uma feature |
 | `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
 | `/planejar-setup` | Decide versão do Python, deps e estrutura de pastas; documenta no CLAUDE.md |
