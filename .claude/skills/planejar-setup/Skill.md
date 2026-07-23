@@ -88,7 +88,10 @@ justifique a escolha.
 **Dependencias:** parta da secao "Modulos afetados" da primeira spec (nao
 so da stack geral do CLAUDE.md) pra saber exatamente o que ela exige pra
 rodar. Tudo de producao com teto de versao `>=x,<y` (regra global do
-usuario). `pytest` sempre entra como dev dependency. Liste o que ficou de
+usuario). `pytest` sempre entra como dev dependency. Se o projeto expoe uma API HTTP
+(existe `.claude/specs/_contrato.md`), as deps base sao `fastapi`, `pydantic`
+e `uvicorn`; considere `schemathesis` como dev dependency pra contract testing
+contra o OpenAPI que o FastAPI gera. Liste o que ficou de
 fora (presente na stack do CLAUDE.md mas nao usado pela primeira spec) e em
 qual spec futura entra.
 

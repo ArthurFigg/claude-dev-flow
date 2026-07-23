@@ -80,6 +80,7 @@ Ordem obrigatória para projetos novos:
 1. Criar CLAUDE.md do projeto  (Claude.ai — só para projetos novos)
 2. /auditar-claude-md          — detecta gaps e inconsistências antes de qualquer código
 3. /dominio                    — propõe entidades, glossário e contextos; gera _dominio.md (uma vez por projeto)
+   /contrato                   — (só projeto web) define a superfície da API (recursos, endpoints, RFC 7807, versão); gera _contrato.md; roda após /dominio, antes das specs de endpoint
 4. /spec                       — repetir para cada feature planejada
 5. /spec-review                — revisa o conjunto de specs, resolve conflitos, define ordem
 6. /planejar-setup             — com todas as specs prontas, decide versão Python, deps e estrutura de pastas; documenta no CLAUDE.md, não executa
@@ -92,6 +93,7 @@ Ordem obrigatória para projetos novos:
 ```
 
 Regras do fluxo:
+* `/contrato` roda **só em projeto que expõe uma API HTTP** (provedor de endpoints), após o `/dominio` e antes das specs de endpoint. Gera `_contrato.md` (documento-decisão em markdown: recursos, endpoints, schemas, erro RFC 7807, versionamento); o OpenAPI real sai do FastAPI na implementação. Projeto CLI/desktop/script ou que só consome API externa pula esta etapa.
 * `/spec-review` é obrigatório após gerar todas as specs — nunca implementar sem revisar o conjunto. Antes de implementar qualquer spec, verifique se o campo `**Revisão:**` no arquivo está como `aprovada`. Se estiver `pendente`, avise o usuário e peça para rodar `/spec-review` primeiro.
 * `/planejar-setup` roda depois do `/spec-review` e antes de implementar — com todas as specs prontas, o planejamento de deps fica preciso (sabe exatamente o que a primeira spec exige).
 * executar setup (conversa livre) é o passo entre `/planejar-setup` e a primeira implementação.
