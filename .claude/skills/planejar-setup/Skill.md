@@ -164,7 +164,31 @@ subsecao — se nao houver valor (ex: nenhuma variavel de ambiente), escreva
 O bloco de CI e sempre identico — nao varia por projeto. O `setup-uv` le
 a versao do Python automaticamente do `.python-version` gerado pelo `uv init`.
 
-## PASSO 4 — Confirmar
+## PASSO 4 — Registrar decisoes transversais
+
+Leia `~/.claude/templates/_decisoes.md` e aplique o criterio de corte, o criterio
+de legibilidade e o formato de entrada definidos la. Nao os repita aqui — o
+template e a fonte unica.
+
+Do PASSO 2, tipicamente passa no criterio: a versao do Python (com o motivo real
+da escolha, nao so "N-1"), o banco escolhido, e a estrutura de pastas quando ela
+impuser um jeito de organizar que as specs seguintes vao herdar.
+
+**Cuidado especial aqui com a segunda exclusao do criterio de corte.** Boa parte
+do que voce decide neste passo nao e decisao do projeto — e obediencia ao CLAUDE.md
+global: teto de versao em dep de producao, `pytest` como dev dependency,
+organizacao por dominio em vez de por tipo de arquivo, SQLite como padrao de
+desenvolvimento. Nada disso entra. So entra o que voce **escolheu para este
+projeto**, com alternativa real na mesa. Se a justificativa da entrada for "e a
+regra global", ela nao devia estar sendo escrita.
+
+O CLAUDE.md continua recebendo o **o que** (a secao "Setup do ambiente", com os
+comandos exatos). O `_decisoes.md` recebe o **porque** e o **custo**. Nenhum dos
+dois repete o outro.
+
+Se o arquivo nao existir, crie com o cabecalho do template.
+
+## PASSO 5 — Confirmar
 
 Informe que a secao foi adicionada ao CLAUDE.md e que, quando o usuario
 quiser executar, basta dizer: "execute o setup seguindo a secao 'Setup do
@@ -195,6 +219,8 @@ Antes de encerrar, verifique:
 - [ ] A secao "Setup do ambiente" foi escrita no CLAUDE.md com as mesmas
       decisoes e motivos do plano exibido no chat?
 - [ ] O bloco de CI (.github/workflows/tests.yml) foi incluido na secao?
+- [ ] As decisoes que restringem mais de uma spec foram registradas no
+      `_decisoes.md`, sem incluir nenhuma regra que o CLAUDE.md global ja impoe?
 - [ ] O usuario foi informado de que a execucao e um pedido livre dele,
       fora desta skill?
 

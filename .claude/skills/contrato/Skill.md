@@ -264,7 +264,26 @@ npx --yes @redocly/cli@latest lint openapi.yaml
 - Se `npx`/node nao estiver disponivel: avise e oriente colar o `openapi.yaml` em
   `editor.swagger.io`, que valida e ja mostra o Swagger.
 
-## PASSO 6 — Confirmar e orientar proximo passo
+## PASSO 6 — Registrar decisoes transversais
+
+Leia `~/.claude/templates/_decisoes.md` e aplique o criterio de corte, o criterio
+de legibilidade e o formato de entrada definidos la. Nao os repita aqui — o
+template e a fonte unica.
+
+As convencoes confirmadas no PASSO 4 sao a maior fonte: versionamento, formato de
+erro, autenticacao, paginacao. Somam-se a elas as decisoes de escopo da API que
+restringem todo endpoint futuro (ex: "somente leitura"). Nao passa no criterio:
+escolha de nome de recurso — isso e glossario, mora no `_dominio.md`.
+
+**Duplicacao deliberada, unica no fluxo:** a decisao que voce escrever no
+`description` do `openapi.yaml` tambem vai para o `_decisoes.md` quando restringir
+codigo. Nao e desperdicio — sao audiencias diferentes: o `openapi.yaml` fala com
+quem CONSOME a API, o `_decisoes.md` fala com quem vai ESCREVER a proxima spec de
+endpoint. Escreva cada uma na linguagem da sua audiencia, nunca copie e cole.
+
+Se o arquivo nao existir, crie com o cabecalho do template.
+
+## PASSO 7 — Confirmar e orientar proximo passo
 
 ```
 Contrato gerado em openapi.yaml (OpenAPI 3.1, validado)
@@ -297,6 +316,8 @@ Proximos passos:
 - Nunca gerar o arquivo sem confirmacao dos recursos, endpoints e convencoes
 - Nunca usar nome de recurso que contradiga o glossario do `_dominio.md`
 - Nunca salvar o `openapi.yaml` em `.claude/specs/` — ele e artefato publico, vai na raiz
+- Nunca copiar e colar o mesmo texto entre `openapi.yaml` e `_decisoes.md` — mesma
+  decisao, audiencias diferentes, redacoes diferentes
 
 # CRITERIO DE QUALIDADE
 
@@ -310,6 +331,7 @@ Antes de encerrar, verifique:
 - [ ] O usuario confirmou recursos, endpoints e convencoes antes da geracao?
 - [ ] O `openapi.yaml` foi gerado na RAIZ (nao em `.claude/specs/`), em OpenAPI 3.1, e VALIDADO?
 - [ ] Todo erro referencia o schema `Problema` (RFC 7807)?
+- [ ] As convencoes confirmadas e o escopo da API viraram entradas no `_decisoes.md`, redigidas para quem vai escrever a proxima spec (nao copiadas do `openapi.yaml`)?
 - [ ] O proximo passo (Swagger, implementacao FastAPI code-first, teste de contrato contra drift) foi informado?
 
 # REFERENCIAS

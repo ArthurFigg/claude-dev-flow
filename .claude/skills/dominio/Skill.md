@@ -195,7 +195,24 @@ Abrange: {lista}
 
 ---
 
-## PASSO 6 — Confirmar e orientar proximo passo
+## PASSO 6 — Registrar decisoes transversais
+
+Leia `~/.claude/templates/_decisoes.md` e aplique o criterio de corte, o criterio
+de legibilidade e o formato de entrada definidos la. Nao os repita aqui — o
+template e a fonte unica.
+
+Do que foi decidido nesta skill, tipicamente passa no criterio: separacao em
+bounded contexts (restringe onde cada spec futura pode mexer), entidade que
+deliberadamente NAO e entidade, e a distincao entre entidade persistida e
+calculada. Nao passa: escolha de nome no glossario — isso ja e o proprio
+`_dominio.md`.
+
+Como o `/dominio` costuma ser a primeira skill do fluxo a produzir decisao
+transversal, normalmente e ela que cria o arquivo. Mas nao crie por obrigacao:
+se nenhuma decisao desta sessao passar no criterio de corte, nao toque no
+arquivo. Quem chegar primeiro cria.
+
+## PASSO 7 — Confirmar e orientar proximo passo
 
 ```
 Dominio documentado em .claude/specs/_dominio.md
@@ -227,4 +244,6 @@ Antes de encerrar, verifique:
 - [ ] A avaliacao de bounded contexts usou criterio de tamanho, nao forcou separacao?
 - [ ] O usuario confirmou entidades, glossario e contextos antes da geracao?
 - [ ] O arquivo `.claude/specs/_dominio.md` foi gerado com o formato correto?
+- [ ] As decisoes que restringem mais de uma spec foram registradas no
+      `_decisoes.md` (ou nenhuma passou no criterio de corte)?
 - [ ] O proximo passo (/spec) foi informado?

@@ -44,6 +44,9 @@ SPECS:
   Concluidas (X): {lista de nomes}
   Pendentes  (Y): {lista de nomes — primeira e a proxima}
 
+DECISOES: {titulos das entradas do _decisoes.md, separados por " | " — a linha
+          inteira some se o arquivo nao existir}
+
 CLAUDE.md: {item pendente mais relevante da seção de status, em 1 linha — ou "sem seção de status"}
 {⚠️ linha de divergencia — só aparece se o status escrito contradiz git/specs}
 
@@ -90,6 +93,11 @@ Quando o git contradizer o arquivo (linha `**Status:** concluida` ausente mas co
 ```
 ⚠️  Divergencia detectada: {nome} tem commit de implementacao mas Status ausente no arquivo.
 ```
+
+Leia tambem `.claude/specs/_decisoes.md`, se existir. Ele responde "por que o
+projeto e assim" sem varrer as specs — que e exatamente o que custa caro ao
+retomar depois de semanas. Nao resuma no briefing entrada por entrada: liste so
+os **titulos**, que ja sao a decisao. Se nao existir, nao mencione.
 
 Identifique a proxima spec a implementar:
 - Se houver resultado de `/spec-review` no CLAUDE.md ou em alguma spec, use a ordem recomendada
@@ -188,5 +196,6 @@ Antes de exibir o briefing, verifique:
 - [ ] pytest foi rodado?
 - [ ] Testes falhando aparecem no topo em destaque?
 - [ ] Mudancas nao commitadas estao mencionadas?
+- [ ] Se existe `_decisoes.md`, a linha DECISOES traz so os titulos (nao o corpo das entradas)? Se nao existe, a linha foi suprimida?
 - [ ] O briefing tem no maximo 25 linhas?
 - [ ] O "proximo passo" e especifico e acionavel?

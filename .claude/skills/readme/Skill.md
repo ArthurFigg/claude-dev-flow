@@ -59,6 +59,12 @@ Se existir `.claude/CLAUDE.md` ou `CLAUDE.md` na raiz:
 - Extraia: objetivo do projeto, stack, publico-alvo, decisoes de arquitetura, comportamentos documentados
 - Essas informacoes tem prioridade sobre inferencias do codigo
 
+### Decisoes transversais — `.claude/specs/_decisoes.md`
+Se existir, leia por inteiro. E a fonte do **porque** do projeto: as decisoes
+foram escritas no momento em que foram tomadas, com contexto e alternativa
+descartada ainda vivos. Nunca reescreva esse conteudo a partir do codigo — o
+codigo mostra o resultado, nao a alternativa que caiu.
+
 ### Arquivo de configuracao — detecte o gerenciador
 Verifique qual existe e leia o encontrado:
 
@@ -95,6 +101,16 @@ montar o badge na secao de titulo.
 
 ### README existente
 Se ja existir `README.md` na raiz, leia antes de sobrescrever.
+
+### Regiao gerada por outra skill — PRESERVAR
+Se o README existente contiver os marcadores `<!-- diagrama:inicio -->` e
+`<!-- diagrama:fim -->`, copie **literalmente** tudo que esta entre eles
+(marcadores inclusive) e guarde para reinjetar no PASSO 6.
+
+Essa faixa pertence a skill `/diagrama`, nao a esta. Voce nao gera, nao corrige e
+nao atualiza o conteudo dela — mesmo que o diagrama pareca defasado em relacao ao
+codigo que voce acabou de ler. Se achar que esta defasado, avise no PASSO 6 e
+sugira rodar `/diagrama`; nunca reescreva por conta propria.
 
 ### Licenca
 Verifique se existe `LICENSE` ou `LICENSE.*` na raiz. Se existir, identifique a
@@ -184,6 +200,34 @@ go build ./...
 - Nao liste arquivos de teste individualmente — so a pasta `tests/`
 - Nao liste arquivos de cache, build ou configuracao de editor
 
+### Decisoes tecnicas (so se existir `.claude/specs/_decisoes.md`)
+
+Destile o `_decisoes.md` lido no PASSO 2. **Destilar e recortar, nao reescrever** —
+as entradas ja nasceram legiveis para quem nunca viu o projeto; se voce sentir
+vontade de reformular, releia antes, provavelmente ja esta bom.
+
+Uma entrada vira um item:
+
+```markdown
+### Decisoes tecnicas
+
+- **SQLite em vez de PostgreSQL** — quem clona roda sem Docker nem servico
+  externo. O projeto nao usa `LISTEN/NOTIFY` nem `pgvector`, os unicos ganhos
+  reais do Postgres aqui. Custo: migrar depois exige trocar os tipos do
+  SQLAlchemy e introduzir Alembic.
+```
+
+Regras:
+- Mantenha o **custo aceito** quando a entrada tiver. E a linha que mostra que a
+  escolha foi feita com consciencia do preco, e a unica que nao da pra improvisar
+  numa conversa sobre o projeto.
+- Corte o campo `Contexto` quando ele so repetir o que o titulo ja diz.
+- Nao acrescente decisao que nao esta no `_decisoes.md`, mesmo que voce a deduza
+  do codigo — deducao nao tem alternativa descartada, e sem alternativa nao e
+  decisao, e descricao.
+- Se o arquivo nao existir, **omita a secao inteira**. Nao invente uma a partir
+  do codigo.
+
 ### Testes (so se houver pasta `tests/` ou equivalente)
 Adapte ao gerenciador:
 ```bash
@@ -224,11 +268,17 @@ Verifique se ha imagens no projeto (glob `**/*.{png,jpg,jpeg,gif,webp}`).
 ## PASSO 6 — Salvar e confirmar
 
 1. Se ja existia README.md, confirme no chat o que sera substituido antes de salvar.
-2. Salve o README gerado em `README.md` na raiz do projeto.
-3. Confirme no chat:
+2. Se o PASSO 2 capturou uma regiao `<!-- diagrama:inicio --> ... <!-- diagrama:fim -->`,
+   reinjete-a **intacta** no README gerado, na mesma posicao relativa que ocupava
+   (mesma secao, ou na secao "## Arquitetura" se ela existir). Compare o trecho
+   salvo com o que voce vai gravar: eles tem que ser identicos, caractere por
+   caractere. Perder essa faixa apaga o trabalho da skill `/diagrama` sem aviso.
+3. Salve o README gerado em `README.md` na raiz do projeto.
+4. Confirme no chat:
    - Idioma usado
    - Secoes geradas
    - Arquivos lidos como fonte
+   - Regiao de diagrama preservada (se havia)
    - Instrucao sobre screenshot (se aplicavel)
 
 # RESTRICOES
@@ -237,6 +287,8 @@ Verifique se ha imagens no projeto (glob `**/*.{png,jpg,jpeg,gif,webp}`).
 - Nunca incluir secao "Contribuindo" sem o usuario pedir
 - Nunca gerar README generico com placeholders para o usuario preencher
 - Nunca sobrescrever README existente sem le-lo e confirmar antes
+- Nunca apagar, editar ou regerar o conteudo entre `<!-- diagrama:inicio -->` e
+  `<!-- diagrama:fim -->` — essa faixa e da skill `/diagrama`
 - Nunca usar um idioma diferente do confirmado no PASSO 1
 - Nunca inventar funcionalidades — so o que foi lido no codigo ou no CLAUDE.md
 
@@ -254,4 +306,6 @@ Antes de salvar, verifique:
 - [ ] Se nao ha arquivo LICENSE nem licenca informada, a secao foi omitida (nao inventou "MIT")?
 - [ ] `.github/workflows/tests.yml` foi verificado e badge incluido se existir?
 - [ ] O README esta completamente no idioma confirmado?
+- [ ] Se existe `_decisoes.md`, a secao "Decisoes tecnicas" saiu dele por recorte, sem decisao deduzida do codigo? Se nao existe, a secao foi omitida?
+- [ ] Se o README anterior tinha regiao de diagrama, ela foi reinjetada identica?
 - [ ] O arquivo foi salvo na raiz do projeto?
