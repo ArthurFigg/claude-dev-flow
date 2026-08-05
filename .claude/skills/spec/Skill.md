@@ -175,7 +175,9 @@ Identifique o que **falta** para especificar sem ambiguidade. Categorize as lacu
 Para cada lacuna identificada, faca UMA pergunta por vez. Ordem: da mais critica (a que causa mais retrabalho se errada) para a menos critica.
 
 Regras para as perguntas:
-- Apresente opcoes quando houver escolhas obvias: "A ou B? A e mais comum para esse tipo de projeto porque [motivo]."
+- Apresente as opcoes SEM entregar a resposta junto: "A ou B?" — nunca "A ou B? A e mais comum porque [motivo]". A pergunta que ja contem a recomendacao e retorica: o usuario so confirma, e o "porque" que fica com ele e o seu, nao o dele.
+- **Espere a escolha do usuario e o motivo dela antes de opinar.** Peca o motivo junto ("qual das duas, e por que?"). Depois de responder, ai sim diga qual voce recomendaria, se concorda com o motivo dele, e o que ele nao considerou. Se ele responder "qual e a melhor?" sem escolher, devolva a pergunta uma vez pedindo um palpite mesmo incerto — palpite errado corrigido ensina mais que resposta pronta. Se ele insistir ou disser que nao sabe, ai responda normalmente e siga; isso e treino, nao interrogatorio.
+- Registre na secao "Decisoes tomadas" o motivo **do usuario** quando ele deu um que se sustenta, nao o seu. Se o motivo dele estava errado e voce corrigiu, registre o corrigido.
 - Se o CLAUDE.md ja responde a pergunta, nao pergunte — use a resposta que ja esta la.
 - Se a resposta do usuario for vaga, reformule a pergunta de forma mais especifica.
 - Apos cada resposta, registre internamente a decisao antes de passar pra proxima.
@@ -322,6 +324,7 @@ Nao altere o CLAUDE.md diretamente — apenas sugira a mudanca.
 - Nunca aceitar criterios vagos ("codigo limpo", "boa performance") — reformular ate serem verificaveis
 - Nunca incluir "como implementar" na spec — isso e trabalho do Claude Code na hora de implementar
 - Nunca perguntar sobre decisoes ja registradas em specs existentes — usar o contexto do PASSO 1.5 diretamente
+- Nunca embutir a recomendacao na propria pergunta — a opiniao vem depois da escolha do usuario, nunca junto com as opcoes
 - Nunca gerar spec com score ≥ 8 sem propor divisao e aguardar confirmacao do usuario
 - Nunca misturar JS nao-trivial e backend Python na mesma spec sem verificar o score primeiro
 - Nunca gerar spec sem a secao "Impacto no CLAUDE.md" preenchida (par "{secao} → {mudanca}" ou "nenhum")
