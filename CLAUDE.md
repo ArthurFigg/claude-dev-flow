@@ -105,8 +105,8 @@ Regras do fluxo:
 * `/encerrar-projeto` é o encerramento formal — pytest final, README, CHANGELOG fechado na versão, commit de encerramento, tag e registro no CLAUDE.md. Disparar quando o projeto estiver pronto, não necessariamente quando todas as specs estiverem concluídas.
 
 Dois artefatos que as skills mantêm sozinhas, sem etapa própria:
-* **`.claude/specs/_decisoes.md`** — decisões que restringem mais de uma spec, escritas no momento em que são tomadas. `/dominio`, `/contrato` e `/planejar-setup` escrevem, `/spec-close` promove, `/session-start` lê, `/readme` destila. Critério de corte e formato em `~/.claude/templates/_decisoes.md`. Regra que este arquivo já impõe não entra — obedecer não é decidir.
-* **`CHANGELOG.md`** — Keep a Changelog + SemVer. `/spec-close` escreve uma linha em `## [Não lançado]` por spec fechada, em nível de usuário (sai do "O que faz" da spec, não da mensagem de commit); `/encerrar-projeto` corta na versão da tag. Mudança imperceptível para quem usa não gera linha.
+* **`.claude/specs/_decisoes.md`** — decisões que restringem mais de uma spec, escritas no momento em que são tomadas, com alternativa descartada e custo aceito. `/dominio`, `/contrato` e `/planejar-setup` escrevem; `/spec-close` promove o que for de altitude arquitetural; `/session-start` lê; `/readme` destila na seção "Decisões técnicas". Critério de corte e formato em `~/.claude/templates/_decisoes.md` — arquivo único, para a regra não desalinhar em cópias. Regra que este CLAUDE.md já impõe **não entra**: obedecer não é decidir.
+* **`CHANGELOG.md`** — Keep a Changelog + SemVer. `/spec-close` escreve uma linha em `## [Não lançado]` por spec fechada, em nível de usuário (sai do "O que faz" da spec, não da mensagem de commit); `/encerrar-projeto` corta na versão da tag. Mudança que quem usa não percebe (refatoração, ajuste de teste) não gera linha.
 
 ---
 
