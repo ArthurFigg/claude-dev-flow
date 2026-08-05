@@ -34,10 +34,13 @@ claude-dev-flow/
       implementar/             # decide inline vs agente por score e implementa a spec
       spec-close/              # roda pytest + revisão de diff, marca concluída, commita
       reabrir-spec/            # reabre uma spec concluída para nova revisão
-      encerrar-projeto/        # encerramento formal: pytest + README + tag de versão
+      encerrar-projeto/        # encerramento formal: pytest + README + CHANGELOG + tag
       session-start/           # briefing de retomada: testes + git + specs em 25 linhas
       git-skill/               # commit semântico com revisão de diff
       readme/                  # gera README baseado nos arquivos reais do projeto
+      diagrama/                # diagrama Mermaid (arquitetura + ER) em região marcada do README
+    templates/
+      _decisoes.md             # critério de corte e formato do registro de decisões transversais
     agents/
       revisor-codigo.md         # subagente read-only: audita o diff antes de cada commit
       verificador-spec.md       # subagente read-only: verifica specs em paralelo no spec-review
@@ -75,9 +78,12 @@ Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill co
 ~/.claude/commands/session-start.md
 ~/.claude/commands/git-skill.md
 ~/.claude/commands/readme.md
+~/.claude/commands/diagrama.md
 ```
 
 > Alternativamente, cada skill pode ser instalada como `~/.claude/skills/{nome}/Skill.md` (mesmo conteúdo) — é o formato usado neste repositório.
+
+Copie também `.claude/templates/_decisoes.md` para `~/.claude/templates/_decisoes.md`. Ele não é uma skill: é o template que `/dominio`, `/contrato`, `/planejar-setup` e `/spec-close` consultam para saber o que entra no registro de decisões transversais do projeto. O critério mora nesse arquivo único justamente para não ser copiado dentro de quatro skills e desalinhar na primeira edição.
 
 No Windows, `~/.claude/` equivale a `C:\Users\<usuario>\.claude\`.
 
@@ -113,8 +119,17 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
 7. Para cada spec: /implementar (inline ou agente, por score) → /spec-close (pytest + revisão do diff → commita)
 8. /session-start         → no início de cada sessão subsequente
+   /diagrama              → quando a arquitetura estabilizar, desenha o mapa no README
    /encerrar-projeto      → quando o projeto estiver pronto para release
 ```
+
+### Dois artefatos que o fluxo mantém sozinho
+
+Nenhum dos dois é uma etapa: as skills que já existem escrevem neles conforme o projeto anda.
+
+**`.claude/specs/_decisoes.md`** — as decisões que restringem mais de uma spec, escritas no momento em que são tomadas, com a alternativa descartada e o custo aceito. `/dominio`, `/contrato` e `/planejar-setup` escrevem; `/spec-close` promove o que for de altitude arquitetural; `/session-start` lê no briefing; `/readme` destila na seção "Decisões técnicas". O critério de corte é uma pergunta só — *a decisão restringe código de mais de uma spec?* — e regra que o CLAUDE.md global já impõe não entra, porque obedecer não é decidir.
+
+**`CHANGELOG.md`** — formato [Keep a Changelog](https://keepachangelog.com/) + SemVer. `/spec-close` escreve uma linha em `## [Não lançado]` a cada spec fechada, em nível de usuário; `/encerrar-projeto` renomeia a seção para a versão da tag. A linha sai do "O que faz" da spec, não da mensagem de commit — commit descreve implementação, spec descreve o que a pessoa passa a conseguir fazer.
 
 Se o hook opcional estiver ativo, a etapa 5 também vira uma barreira técnica: nenhuma edição de código passa enquanto houver spec com `Revisão: pendente` — não é mais só uma instrução que a IA segue por texto.
 

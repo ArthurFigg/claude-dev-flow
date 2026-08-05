@@ -89,7 +89,8 @@ Ordem obrigatória para projetos novos:
    → implementar
    → /spec-close               — roda pytest, marca concluída, commita
 9. /session-start              — usar no início de qualquer sessão subsequente
-10. /encerrar-projeto          — quando o projeto estiver pronto para release
+10. /diagrama                  — quando a arquitetura estabilizar, desenha o mapa em região marcada do README
+11. /encerrar-projeto          — quando o projeto estiver pronto para release
 ```
 
 Regras do fluxo:
@@ -100,7 +101,12 @@ Regras do fluxo:
 * `/spec-close` é o único caminho para commitar durante a implementação — nunca commitar manualmente no meio de specs.
 * `/session-start` substitui a reconstrução manual de contexto ao retomar um projeto.
 * `/git-skill` é reservado para commits fora do ciclo de specs (hotfix, ajuste de config).
-* `/encerrar-projeto` é o encerramento formal — pytest final, README, tag de versão e registro no CLAUDE.md. Disparar quando o projeto estiver pronto, não necessariamente quando todas as specs estiverem concluídas.
+* `/diagrama` roda quando a arquitetura estiver estável, nunca antes — diagrama de estrutura que ainda vai mudar é retrabalho. Escreve só entre `<!-- diagrama:inicio -->` e `<!-- diagrama:fim -->` no README; o `/readme` preserva essa faixa intacta ao regenerar.
+* `/encerrar-projeto` é o encerramento formal — pytest final, README, CHANGELOG fechado na versão, commit de encerramento, tag e registro no CLAUDE.md. Disparar quando o projeto estiver pronto, não necessariamente quando todas as specs estiverem concluídas.
+
+Dois artefatos que as skills mantêm sozinhas, sem etapa própria:
+* **`.claude/specs/_decisoes.md`** — decisões que restringem mais de uma spec, escritas no momento em que são tomadas. `/dominio`, `/contrato` e `/planejar-setup` escrevem, `/spec-close` promove, `/session-start` lê, `/readme` destila. Critério de corte e formato em `~/.claude/templates/_decisoes.md`. Regra que este arquivo já impõe não entra — obedecer não é decidir.
+* **`CHANGELOG.md`** — Keep a Changelog + SemVer. `/spec-close` escreve uma linha em `## [Não lançado]` por spec fechada, em nível de usuário (sai do "O que faz" da spec, não da mensagem de commit); `/encerrar-projeto` corta na versão da tag. Mudança imperceptível para quem usa não gera linha.
 
 ---
 
@@ -125,6 +131,7 @@ Regras do fluxo:
 ## Comunicação
 
 * Explique o **porquê** das decisões, não o que o código faz.
+* Ao explicar uma decisão, nomear o **princípio geral** por trás dela e citar **um** outro contexto onde o mesmo princípio se aplica. O objetivo é conhecimento transferível, não explicação mais longa — uma frase a mais, não um parágrafo.
 * Avise riscos proativamente (performance, segurança, acoplamento) antes de implementar.
 * Sem comentários óbvios no código. Comente apenas lógica genuinamente não-óbvia, trade-offs ou limitações conhecidas.
 * Quando perceber algo que pode ser melhorado no código mostrado, **sugira a refatoração mesmo sem ser pedido** — estrutura, naming, performance, acoplamento desnecessário.

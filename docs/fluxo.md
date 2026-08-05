@@ -169,6 +169,23 @@ Não commite manualmente durante o ciclo de specs. O `/spec-close` é o único c
 
 ---
 
+### Etapa 7.5 — `/diagrama` (quando a arquitetura estabilizar)
+
+**Quando:** com código real no lugar e a estrutura de pastas já estável — não antes. Um diagrama de arquitetura que ainda vai mudar é retrabalho garantido.
+
+**O que faz:**
+- Lê a estrutura real do projeto (pastas, imports, modelos) e decide se o projeto ganha algo com um diagrama; se não ganhar, recusa e registra a recusa
+- Propõe um `flowchart` da arquitetura e, se houver banco relacional, um `erDiagram` do modelo de dados
+- Escreve **apenas** dentro dos marcadores `<!-- diagrama:inicio -->` e `<!-- diagrama:fim -->` do README
+
+**Por que Mermaid:** o GitHub renderiza nativamente, sem ferramenta externa nem imagem para manter atualizada. É a primeira coisa que alguém vê ao abrir o repositório.
+
+**Por que uma região marcada:** o README pertence à skill `/readme`, e o diagrama à `/diagrama`. Sem uma fronteira explícita, uma regeneração do README apagaria o trabalho da outra sem aviso. O `/readme` copia essa faixa literalmente e a reinjeta intacta; o `/diagrama` nunca escreve fora dela. Dois donos no mesmo arquivo só convivem com a fronteira declarada.
+
+O piso do desenho é o arquivo ou o pacote — função, classe e método nunca entram. O diagrama é documentação, não contrato: ele fala com humano.
+
+---
+
 ### Etapa 8 — `/encerrar-projeto` (quando o projeto estiver pronto)
 
 **Quando:** quando o projeto está pronto para release — não necessariamente com todas as specs concluídas (algumas podem ter ficado fora do escopo de propósito).
@@ -176,11 +193,58 @@ Não commite manualmente durante o ciclo de specs. O `/spec-close` é o único c
 **O que faz:**
 - Roda `uv run pytest -v` — se algo falhar, bloqueia o encerramento
 - Valida o README contra o projeto real (não só checa existência)
+- Verifica se há diagrama de arquitetura, ou registro de que a ausência foi decidida
 - Audita a coerência do CLAUDE.md com o estado atual do projeto
+- Fecha o `CHANGELOG.md` na versão: renomeia `## [Não lançado]` para `## [{versão}] - {data}`
+- Commita tudo que os passos anteriores editaram, **antes** de criar a tag
 - Cria uma tag de versão anotada e faz push
 - Registra no CLAUDE.md a data, versão, contagem de testes, commits e período do projeto
 
 **Por que é importante:** formaliza o fim do projeto com um estado verificado — testes verdes, documentação coerente e um ponto de restauração marcado no histórico.
+
+**Por que o commit vem antes da tag:** uma tag aponta para um commit. Se o README, o CHANGELOG e o CLAUDE.md forem editados e a tag for criada sem commitar, ela aponta para o commit *anterior* — e o repositório passa a ter um `CHANGELOG.md` anunciando uma versão que a própria versão não contém. É a mesma classe de erro que o teste de contrato evita na API: dois artefatos descrevendo a mesma coisa sem nada garantindo que batem.
+
+---
+
+### Os dois artefatos que o fluxo mantém sozinho
+
+Não são etapas. As skills que já existem escrevem neles conforme o projeto anda — não há skill nova nem passo manual.
+
+#### `.claude/specs/_decisoes.md` — o "porquê" do projeto
+
+Guarda as decisões que **restringem mais de uma spec**, com contexto, alternativa descartada e custo aceito, escritas no momento em que foram tomadas.
+
+| Skill | Papel |
+|---|---|
+| `/dominio` | Escreve: bounded contexts, o que deliberadamente não é entidade |
+| `/contrato` | Escreve: convenções da API e escopo (ex: somente leitura) |
+| `/planejar-setup` | Escreve: versão do Python, banco, estrutura de pastas |
+| `/spec-close` | Promove uma "Decisão tomada" da spec, se ela restringir as próximas |
+| `/session-start` | Lê: linha `DECISOES:` no briefing, só os títulos |
+| `/readme` | Destila na seção "Decisões técnicas" do README |
+
+O critério de corte é uma pergunta só: *a decisão restringe código que ainda vai ser escrito, em mais de uma spec?* Decisão de uma spec só fica na spec — o lugar dela já existe. E regra que o CLAUDE.md global já impõe (código em português, teto de versão nas deps) **não entra**: obedecer não é decidir, e registrar isso transformaria o arquivo numa cópia do CLAUDE.md global.
+
+O critério mora em `~/.claude/templates/_decisoes.md`, arquivo único que as quatro skills consultam. Se cada uma carregasse a própria cópia da regra, a primeira edição desalinharia as outras três.
+
+**Por que não ADR:** o formato ADR (um arquivo numerado e imutável por decisão, com `superseded`) existe por causa de **rotatividade de time** — quem decidiu saiu, e você precisa ler a decisão no contexto em que foi tomada. Em projeto solo essa força não existe: quem decidiu ainda está lá. O que existe é esquecer com o tempo e precisar que outra pessoa **encontre** o raciocínio — e isso pede um arquivo só, legível, destilado no README, não uma pasta `docs/adr/`.
+
+#### `CHANGELOG.md` — o que mudou, para quem usa
+
+Formato [Keep a Changelog](https://keepachangelog.com/) + [SemVer](https://semver.org/). O `/spec-close` escreve uma linha em `## [Não lançado]` a cada spec fechada; o `/encerrar-projeto` renomeia a seção para a versão da tag.
+
+A linha sai do **"O que faz" da spec**, não da mensagem de commit:
+
+```
+❌ Implementa o núcleo de consulta em consultas.py (Spec 7a)
+✅ Filtro por tipo, desafio e ambiente agora funciona igual no terminal e no site
+```
+
+Mudança que quem usa não percebe — refatoração, ajuste de teste, reorganização de pasta — **não gera linha**. Ruído no CHANGELOG custa mais que a ausência de uma entrada; o `git log` continua guardando tudo.
+
+**Por que não gerar do `git log`:** a geração automática (`semantic-release`, `release-please`) depende de conventional commits (`feat:`, `fix:`), e este fluxo usa mensagem livre em português, sem prefixo. Além disso os commits aqui são um por spec — um CHANGELOG derivado deles seria a lista de specs com outro nome. O que o `git log` não sabe e a spec sabe é o nível de usuário.
+
+Para projeto que já andou antes disso existir, o `/encerrar-projeto` faz o **backfill** uma vez: reconstrói as entradas percorrendo os commits, mas lendo o "O que faz" de cada spec correspondente, e marca a seção como reconstruída.
 
 ---
 
@@ -215,10 +279,11 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/implementar [nome]` | Implementa a spec: inline se pequena, via subagente `implementador-spec` se grande |
 | `/spec-close [nome]` | Fecha uma spec: pytest + revisão do diff + commit |
 | `/reabrir-spec [nome]` | Reabre uma spec concluída para nova revisão |
-| `/encerrar-projeto` | Encerramento formal: pytest + README + tag de versão |
+| `/encerrar-projeto` | Encerramento formal: pytest + README + CHANGELOG + commit + tag |
 | `/session-start` | Briefing de retomada de sessão |
 | `/git-skill` | Commit fora do ciclo de specs |
 | `/readme` | Gera o README.md quando o projeto estiver pronto |
+| `/diagrama` | Desenha arquitetura e modelo de dados em Mermaid, numa região marcada do README |
 
 Os subagentes (`revisor-codigo`, `verificador-spec`) e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README para ativação — e reforçam automaticamente etapas que as skills acima já cobrem por instrução.
 
