@@ -213,6 +213,89 @@ O CLAUDE.md atualizado entra no mesmo commit da spec — o `git add -A` do PASSO
 
 ---
 
+## PASSO 4.6 — Promover decisao transversal (na maioria das specs, nao faz nada)
+
+Releia a secao "Decisoes tomadas" da spec que voce esta fechando e aplique a UMA
+pergunta do criterio de corte em `~/.claude/templates/_decisoes.md`:
+
+> A decisao restringe codigo que ainda vai ser escrito, em mais de uma spec?
+
+**O caso normal e nenhuma passar.** Decisao de spec e quase sempre local — nome de
+arquivo, formato de saida, onde a funcao mora. Ela ja esta registrada na spec, que
+e o lugar certo. Nao force promocao: arquivo de decisao transversal com decisao
+local dentro perde a propriedade que o torna util (ler cinco entradas e entender o
+projeto).
+
+Promova apenas quando, durante a implementacao, apareceu uma decisao que **as
+proximas specs vao ter que respeitar** — tipicamente porque a spec criou uma
+camada, um contrato interno ou um padrao que os modulos seguintes herdam.
+
+Ao promover: escreva a entrada no formato do template, redigida para quem nunca viu
+a spec de origem (criterio de legibilidade — entrada auto-contida, sem "conforme a
+Spec 4"). Nao copie o texto da spec; a spec fala com quem implementa aquela feature,
+o `_decisoes.md` fala com quem vai escrever a proxima.
+
+Se promoveu, informe em uma linha:
+```
+Promovida a _decisoes.md: {titulo da entrada}
+```
+
+O `_decisoes.md` entra no mesmo commit — o `git add -A` do PASSO 5 ja o inclui.
+
+---
+
+## PASSO 4.7 — Registrar a mudanca no CHANGELOG
+
+Acrescente uma linha em `CHANGELOG.md` na raiz, dentro de `## [Nao lancado]`.
+
+**Se o arquivo nao existir, crie com este cabecalho:**
+
+```markdown
+# Changelog
+
+Todas as mudancas notaveis deste projeto sao registradas aqui.
+
+O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e o
+projeto adere ao [Versionamento Semantico](https://semver.org/).
+
+## [Nao lancado]
+```
+
+**A categoria sai do modo detectado no PASSO 1:**
+
+| Modo | Categoria | Excecao |
+|---|---|---|
+| implementacao | `### Adicionado` | Se a spec substitui comportamento que ja existia, use `### Modificado` |
+| revisao | `### Modificado` | Se a secao "Revisao" da spec descreve conserto de comportamento errado, use `### Corrigido` |
+
+Crie a subsecao `###` so quando ela ainda nao existir em `[Nao lancado]`.
+
+**A linha e escrita em nivel de usuario**, nao de implementacao. A "Descricao
+curta" extraida no PASSO 1 e o ponto de partida, mas ela foi escrita para quem ia
+implementar — reescreva para quem **usa** o projeto:
+
+- Sem nome de modulo, arquivo, classe ou funcao
+- Sem numero nem nome de spec
+- O que a pessoa passa a conseguir fazer, nao o que foi construido
+
+```
+❌ Implementa o nucleo de consulta em `bestiario/consultas.py`, compartilhado
+   entre CLI e web (Spec 7a)
+✅ Filtro por tipo, desafio e ambiente agora funciona igual no terminal e no site
+```
+
+Se a spec ja tiver uma linha em `[Nao lancado]` (caso de spec reaberta e fechada
+de novo), **atualize a linha existente** em vez de acrescentar uma segunda.
+
+Se a mudanca nao for perceptivel por quem usa o projeto — refatoracao pura, ajuste
+de teste, reorganizacao de pasta — **nao escreva nada**. Keep a Changelog e
+explicito: o arquivo registra mudanca notavel para humano, e ruido nele custa mais
+que a ausencia de uma linha. O `git log` continua guardando tudo.
+
+O `CHANGELOG.md` entra no mesmo commit — o `git add -A` do PASSO 5 ja o inclui.
+
+---
+
 ## PASSO 5 — Commitar
 
 ### Verificar arquivos sensiveis
@@ -352,6 +435,8 @@ Antes de encerrar, verifique:
 - [ ] A decisao do usuario sobre arquivos suspeitos foi aplicada antes de continuar?
 - [ ] A spec foi marcada como concluida no arquivo?
 - [ ] A secao "Impacto no CLAUDE.md" foi lida e, se diferente de "nenhum", as secoes indicadas foram sincronizadas antes do commit (PASSO 4.5)?
+- [ ] As "Decisoes tomadas" da spec passaram pelo criterio de corte (PASSO 4.6), promovendo so o que restringe mais de uma spec — e nada, se for o caso?
+- [ ] A linha do CHANGELOG foi escrita em nivel de usuario (sem modulo, arquivo ou numero de spec) — ou omitida, se a mudanca nao e perceptivel por quem usa?
 - [ ] A mensagem de commit usa "implementa" ou "revisa" conforme o modo?
 - [ ] O push foi executado (ou pulado com aviso, se nao ha remote configurado)?
 - [ ] Specs pendentes foram listadas na confirmacao final?

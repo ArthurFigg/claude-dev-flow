@@ -120,7 +120,30 @@ Leia o README e confira as referencias executaveis:
 - Sinal extra de defasagem: o README nao e tocado ha varios commits de codigo
   (compare `git log -1 --format=%as -- README.md` com o ultimo commit de codigo).
 
-Se estiver tudo coerente: registre "README.md validado." e va para o PASSO 5.
+Se estiver tudo coerente: registre "README.md validado." e siga para a verificacao
+de diagrama abaixo.
+
+### Verificar o diagrama de arquitetura
+Um release e a hora em que alguem de fora vai abrir o repositorio pela primeira
+vez, entao o mapa do projeto deveria estar la. Checagem simples, sem avaliar
+merito — quem decide se o projeto merece diagrama e a propria `/diagrama`:
+
+1. O README contem `<!-- diagrama:inicio -->`? Se sim, esta coberto — siga.
+2. Se nao: o `CLAUDE.md` do projeto tem a linha `Diagrama: nao se aplica`? Se sim,
+   a decisao ja foi tomada — siga sem perguntar.
+3. Se nenhum dos dois, pergunte:
+```
+Este README nao tem diagrama de arquitetura, e nao ha registro de que isso foi
+avaliado. Antes de cravar a tag:
+[A] Rodar /diagrama agora   [B] Encerrar sem diagrama
+```
+- **[A]**: rode `/diagrama`, confira o resultado em mermaid.live e **commite**
+  antes de continuar — ele precisa estar no historico antes da tag do PASSO 5.
+- **[B]**: siga para o PASSO 5 (a ausencia foi aceita pelo usuario).
+
+Atencao na rota `[A]` da defasagem de README acima: se voce mandar rodar `/readme`
+num projeto que ja tem diagrama, confirme depois que a faixa entre os marcadores
+sobreviveu a regeracao. Regerar o README sem preservar essa faixa apaga o diagrama.
 
 Se encontrar referencia quebrada ou defasagem, mostre os pontos concretos e pergunte:
 ```
@@ -152,6 +175,82 @@ entram no historico ANTES da tag do PASSO 5. Se estiver tudo coerente, registre
 
 Reaproveita o espirito do /auditar-claude-md, mas focado so na coerencia com o
 estado atual, nao na completude de contexto.
+
+---
+
+## PASSO 4.7 — Fechar o CHANGELOG na versao
+
+### Se `CHANGELOG.md` existe e `## [Nao lancado]` tem conteudo
+
+Renomeie `## [Nao lancado]` para `## [{versao}] - {data de hoje YYYY-MM-DD}` e
+abra um `## [Nao lancado]` vazio acima dele. As subsecoes (`### Adicionado`,
+`### Modificado`, `### Corrigido`) descem junto, intactas — elas foram escritas
+pelo `/spec-close` no momento de cada fechamento e nao devem ser reformuladas
+agora.
+
+### Se `CHANGELOG.md` nao existe, ou `[Nao lancado]` esta vazio — BACKFILL
+
+Acontece em projeto que ja andou antes do CHANGELOG existir no fluxo. Rode uma
+vez e nunca mais:
+
+```bash
+git log --oneline {ultima tag}..HEAD
+```
+
+Se nao houver tag anterior, use `git log --oneline` inteiro.
+
+Reconstrua as entradas a partir dos commits `implementa {titulo}` / `revisa
+{titulo}` — cada um corresponde a uma spec fechada. Para cada commit, **leia a
+secao "O que faz" da spec correspondente em `.claude/specs/`** e escreva a linha
+a partir dela, nao a partir da mensagem de commit. A mensagem esta em nivel de
+implementacao ("implementa nucleo de consulta"); a spec tem o nivel de usuario, que
+e o que o CHANGELOG pede.
+
+Marque a secao reconstruida, para quem ler saber que ela nao foi escrita no
+momento das mudancas:
+
+```markdown
+## [v1.0.0] - 2026-08-05
+
+> Secao reconstruida a partir do historico do projeto. As versoes seguintes sao
+> registradas conforme cada mudanca acontece.
+
+### Adicionado
+- ...
+```
+
+Use o cabecalho do arquivo definido no PASSO 4.7 do `/spec-close` quando precisar
+criar o `CHANGELOG.md` do zero.
+
+### Em qualquer dos casos
+
+Nao invente entrada para mudanca que nao e perceptivel por quem usa o projeto —
+refatoracao, ajuste de teste, reorganizacao de pasta ficam de fora. Se, depois do
+backfill, nao sobrar nenhuma entrada real, nao crie o arquivo e avise o usuario.
+
+---
+
+## PASSO 4.9 — Commit de encerramento
+
+Os passos anteriores editaram arquivos (README, CHANGELOG, CLAUDE.md auditado) e
+**nada disso foi commitado ainda**. Se a tag for criada agora, ela aponta para o
+commit anterior e nao contem nenhuma dessas mudancas — o `CHANGELOG.md` diria
+`[{versao}]` sem estar na versao que leva esse nome.
+
+Verifique o que mudou:
+
+```bash
+git status
+```
+
+Se houver mudancas, commite antes da tag:
+
+```bash
+git add -A
+git commit -m "prepara release {versao}"
+```
+
+Se o diretorio estiver limpo, siga direto para o PASSO 5.
 
 ---
 
@@ -228,6 +327,7 @@ Versao:   {versao}
 Tag:      {hash da tag}
 Testes:   {N} passando
 README:   {existe / ausente}
+Diagrama: {presente / nao se aplica / ausente por opcao}
 
 Specs concluidas: {N}/{total}
 {lista de specs pendentes se houver}
@@ -239,6 +339,10 @@ Periodo:  {data primeiro commit} a {data de hoje} ({N} dias ativos)
 # RESTRICOES
 
 - Nunca criar tag se pytest falhar
+- Nunca criar a tag com mudancas nao commitadas — o PASSO 4.9 vem antes do PASSO 5
+  sempre; tag que nao contem o proprio CHANGELOG da versao e drift
+- Nunca reescrever entradas de CHANGELOG ja registradas pelo `/spec-close` — elas
+  foram escritas no momento da mudanca, que e quando valem mais
 - Nunca encerrar sem confirmacao explicita do usuario
 - Nunca sobrescrever tag existente
 - Nunca bloquear por specs pendentes — so avisar
@@ -253,8 +357,12 @@ Antes de encerrar, verifique:
 - [ ] pytest passou com zero falhas?
 - [ ] README foi validado contra o projeto (existe E as referencias executaveis
       conferem), nao apenas checado por existencia?
+- [ ] O diagrama foi verificado (presente no README, ou registrado como nao
+      aplicavel no CLAUDE.md, ou dispensado pelo usuario)?
 - [ ] O CLAUDE.md foi auditado quanto a coerencia com o estado real (status de
       specs, checklists, comandos) antes da tag?
+- [ ] O CHANGELOG foi fechado na versao (ou reconstruido por backfill, marcado como tal) antes da tag?
+- [ ] O commit de encerramento foi feito antes da tag, de modo que a tag contenha o README, o CHANGELOG e o CLAUDE.md desta versao?
 - [ ] Tag foi criada (e publicada, se ha remote configurado) sem sobrescrever tag existente?
 - [ ] Encerramento foi registrado no CLAUDE.md com data, versao, contagem de testes, commits e periodo?
 - [ ] Os tres comandos git foram executados e os valores preenchidos no bloco (commits, data do primeiro commit, dias ativos)?
