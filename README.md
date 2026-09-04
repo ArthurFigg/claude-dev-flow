@@ -62,7 +62,7 @@ Copie para `~/.claude/CLAUDE.md` (Windows: `C:\Users\<usuario>\.claude\CLAUDE.md
 
 ### 2. Instale as skills
 
-Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill como um slash command no Claude Code, copie o `Skill.md` para a pasta global de comandos com o nome da skill:
+Cada pasta em `.claude/skills/` contém um `SKILL.md`. Para ativar cada skill como um slash command no Claude Code, copie o `SKILL.md` para a pasta global de comandos com o nome da skill:
 
 ```
 ~/.claude/commands/auditar-claude-md.md
@@ -81,7 +81,7 @@ Cada pasta em `.claude/skills/` contém um `Skill.md`. Para ativar cada skill co
 ~/.claude/commands/diagrama.md
 ```
 
-> Alternativamente, cada skill pode ser instalada como `~/.claude/skills/{nome}/Skill.md` (mesmo conteúdo) — é o formato usado neste repositório.
+> Alternativamente, cada skill pode ser instalada como `~/.claude/skills/{nome}/SKILL.md` (mesmo conteúdo) — é o formato usado neste repositório. O nome do arquivo é em maiúsculas: no Linux, `Skill.md` não é encontrado e a skill simplesmente não carrega, sem erro.
 
 Copie também `.claude/templates/_decisoes.md` para `~/.claude/templates/_decisoes.md`. Ele não é uma skill: é o template que `/dominio`, `/contrato`, `/planejar-setup` e `/spec-close` consultam para saber o que entra no registro de decisões transversais do projeto. O critério mora nesse arquivo único justamente para não ser copiado dentro de quatro skills e desalinhar na primeira edição.
 
