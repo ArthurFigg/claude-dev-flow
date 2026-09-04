@@ -31,32 +31,17 @@
 
 ## Ambiguidade e Contexto
 
-* Se o contexto for ambíguo (onde o código fica, qual é a intenção, qual o escopo), **pergunte antes de assumir**. Uma pergunta direta é melhor que uma implementação errada.
-* Quando o pedido for claro, implemente sem perguntar — não peça confirmação desnecessária.
-* Se perceber que o pedido vai causar problema (acoplamento, inconsistência com o projeto), sinalize antes de implementar.
-
-## Prompts Mal Formulados
-
-* Se o pedido for vago, incompleto ou ambíguo demais para gerar algo útil, **não tente adivinhar — faça perguntas**.
-* Identifique exatamente o que está faltando e pergunte de forma direta e objetiva: uma pergunta por vez, começando pela mais crítica.
-* Exemplos de situações que exigem clarificação:
-
-  * "cria uma função de autenticação" → qual mecanismo? JWT, sessão, OAuth? onde fica no projeto?
-  * "refatora isso" → qual é o objetivo da refatoração? performance, legibilidade, desacoplamento?
-  * "adiciona validação" → validação de quê, com qual critério, onde deve falhar?
-* Não simule entendimento e entregue algo genérico. Prefira pausar e alinhar.
-* Após as respostas, confirme o entendimento em uma linha antes de implementar.
+* Pedido claro: implemente sem perguntar. Não peça confirmação desnecessária.
+* Pedido vago (onde o código fica, qual a intenção, qual o escopo): **pergunte, não adivinhe**. Uma pergunta por vez, da mais crítica para a menos. Nunca entregue algo genérico simulando entendimento.
+* O que costuma faltar: mecanismo ("função de autenticação" → JWT, sessão, OAuth?), objetivo ("refatora isso" → performance ou legibilidade?), critério ("adiciona validação" → de quê, e falha onde?).
+* Depois das respostas, confirme o entendimento em uma linha antes de implementar.
+* Se o pedido vai causar problema (acoplamento, inconsistência com o projeto), sinalize antes de implementar.
 
 ---
 
 ## Quando eu abrir um projeto existente
 
-Se eu disser "analise este projeto", você deve:
-
-1. Ler a estrutura de pastas e arquivos principais
-2. Identificar padrões já usados no código
-3. Gerar um .claude/CLAUDE.md específico para esse projeto
-4. Me perguntar antes de salvar se está correto
+"Analise este projeto" = ler estrutura e arquivos principais, identificar os padrões já usados, e gerar um `.claude/CLAUDE.md` específico dele — perguntando antes de salvar.
 
 ---
 
@@ -74,39 +59,24 @@ Se eu disser "analise este projeto", você deve:
 
 ## Fluxo de Desenvolvimento
 
-Ordem obrigatória para projetos novos:
+Projeto novo, nesta ordem:
 
 ```
-1. Criar CLAUDE.md do projeto  (Claude.ai — só para projetos novos)
-2. /auditar-claude-md          — detecta gaps e inconsistências antes de qualquer código
-3. /dominio                    — propõe entidades, glossário e contextos; gera _dominio.md (uma vez por projeto)
-   /contrato                   — (só projeto web) define a superfície da API (recursos, endpoints, RFC 7807, versão); gera openapi.yaml; roda após /dominio, antes das specs de endpoint
-4. /spec                       — repetir para cada feature planejada
-5. /spec-review                — revisa o conjunto de specs, resolve conflitos, define ordem
-6. /planejar-setup             — com todas as specs prontas, decide versão Python, deps e estrutura de pastas; documenta no CLAUDE.md, não executa
-7. executar setup              — "execute o setup seguindo a seção 'Setup do ambiente' do CLAUDE.md"
-8. Para cada spec (na ordem recomendada pelo spec-review):
-   → implementar
-   → /spec-close               — roda pytest, marca concluída, commita
-9. /session-start              — usar no início de qualquer sessão subsequente
-10. /diagrama                  — quando a arquitetura estabilizar, desenha o mapa em região marcada do README
-11. /encerrar-projeto          — quando o projeto estiver pronto para release
+CLAUDE.md → /auditar-claude-md → /dominio → [/contrato, só API HTTP] →
+/spec (×N) → /spec-review → /planejar-setup → executar setup →
+por spec: /implementar → /spec-close →
+/readme → /diagrama → /encerrar-projeto
 ```
 
-Regras do fluxo:
-* `/contrato` roda **só em projeto que expõe uma API HTTP** (provedor de endpoints), após o `/dominio` e antes das specs de endpoint. Gera `openapi.yaml` (OpenAPI 3.1 — o contrato e a documentação da API, renderizável no Swagger). A implementação é code-first com FastAPI, e um teste de contrato compara o OpenAPI gerado pelo código com o `openapi.yaml` commitado, barrando drift. Projeto CLI/desktop/script ou que só consome API externa pula esta etapa.
-* `/spec-review` é obrigatório após gerar todas as specs — nunca implementar sem revisar o conjunto. Antes de implementar qualquer spec, verifique se o campo `**Revisão:**` no arquivo está como `aprovada`. Se estiver `pendente`, avise o usuário e peça para rodar `/spec-review` primeiro.
-* `/planejar-setup` roda depois do `/spec-review` e antes de implementar — com todas as specs prontas, o planejamento de deps fica preciso (sabe exatamente o que a primeira spec exige).
-* executar setup (conversa livre) é o passo entre `/planejar-setup` e a primeira implementação.
-* `/spec-close` é o único caminho para commitar durante a implementação — nunca commitar manualmente no meio de specs.
-* `/session-start` substitui a reconstrução manual de contexto ao retomar um projeto.
-* `/git-skill` é reservado para commits fora do ciclo de specs (hotfix, ajuste de config).
-* `/diagrama` roda quando a arquitetura estiver estável, nunca antes — diagrama de estrutura que ainda vai mudar é retrabalho. Escreve só entre `<!-- diagrama:inicio -->` e `<!-- diagrama:fim -->` no README; o `/readme` preserva essa faixa intacta ao regenerar.
-* `/encerrar-projeto` é o encerramento formal — pytest final, README, CHANGELOG fechado na versão, commit de encerramento, tag e registro no CLAUDE.md. Disparar quando o projeto estiver pronto, não necessariamente quando todas as specs estiverem concluídas.
+`/session-start` abre qualquer sessão de projeto em andamento.
 
-Dois artefatos que as skills mantêm sozinhas, sem etapa própria:
-* **`.claude/specs/_decisoes.md`** — decisões que restringem mais de uma spec, escritas no momento em que são tomadas, com alternativa descartada e custo aceito. `/dominio`, `/contrato` e `/planejar-setup` escrevem; `/spec-close` promove o que for de altitude arquitetural; `/session-start` lê; `/readme` destila na seção "Decisões técnicas". Critério de corte e formato em `~/.claude/templates/_decisoes.md` — arquivo único, para a regra não desalinhar em cópias. Regra que este CLAUDE.md já impõe **não entra**: obedecer não é decidir.
-* **`CHANGELOG.md`** — Keep a Changelog + SemVer. `/spec-close` escreve uma linha em `## [Não lançado]` por spec fechada, em nível de usuário (sai do "O que faz" da spec, não da mensagem de commit); `/encerrar-projeto` corta na versão da tag. Mudança que quem usa não percebe (refatoração, ajuste de teste) não gera linha.
+**O detalhe de cada etapa está em `docs/fluxo.md`** — quando roda, o que gera, o que pula, e os dois artefatos que as skills mantêm sozinhas (`_decisoes.md` e `CHANGELOG.md`). Leia esse arquivo ao começar projeto novo ou ao escolher a próxima etapa; não precisa dele para escrever código.
+
+Três regras do fluxo valem sempre e por isso ficam aqui:
+
+* **Spec com `**Revisão:** pendente` não é implementada.** Rodar `/spec-review` antes.
+* **`/implementar` é o único caminho para implementar uma spec** — ele escreve os testes antes do código, por outro ator (ver seção Testes).
+* **`/spec-close` é o único caminho para commitar durante a implementação.** `/git-skill` só para commit fora do ciclo de specs.
 
 ---
 
@@ -149,16 +119,9 @@ Dois artefatos que as skills mantêm sozinhas, sem etapa própria:
 
 Organização por **domínio/feature**, nunca por tipo de arquivo.
 
-❌ Não:
+Uma pasta por domínio (`usuarios/`, `produtos/`), não `models/` + `views/` + `utils/`.
 
-```
-models/
-views/
-utils/
-helpers/
-```
-
-✅ Sim:
+Dentro de cada domínio:
 
 ```
 usuarios/
@@ -168,20 +131,6 @@ usuarios/
     rotas.py            # handlers HTTP — só orquestração, sem lógica
     repositorio.py      # acesso a dados e queries
     excecoes.py         # erros específicos do domínio
-
-produtos/
-    __init__.py
-    modelos.py
-    servicos.py
-    rotas.py
-    repositorio.py
-
-tests/
-    usuarios/
-        test_servicos.py
-        test_repositorio.py
-    produtos/
-        test_servicos.py
 ```
 
 * Se o nome do arquivo precisar de "e" para fazer sentido, está fazendo coisas demais.
@@ -194,7 +143,8 @@ tests/
 ## Testes
 
 * **pytest** sempre. Criar `tests/` espelhando a estrutura do projeto.
-* Gerar os testes **junto com o código**, sem precisar pedir.
+* Gerar os testes sem precisar pedir — nunca entregar código sem eles.
+* **No ciclo de specs, o teste vem antes e é de outro ator.** O `/implementar` chama o agente `escritor-testes`, que escreve os testes a partir dos "Critérios verificáveis" sem ver código. Depois a implementação faz passar e **não edita `tests/`**. Motivo: teste escrito pela mesma passada que escreveu o código confirma o código, não a spec. Fora do ciclo (script solto, hotfix), teste junto com o código.
 * Nomenclatura: `test_{módulo}.py`, funções `test_{cenário}_{resultado_esperado}()`.
 * Nível: pytest simples + fixtures quando houver setup repetido + mocks na fronteira (I/O, HTTP, banco).
 * Cada teste com **um assert lógico**. Múltiplos asserts → separar em testes distintos.
