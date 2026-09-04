@@ -42,6 +42,7 @@ claude-dev-flow/
     templates/
       _decisoes.md             # critério de corte e formato do registro de decisões transversais
     agents/
+      escritor-testes.md        # subagente Sonnet: escreve os testes da spec antes de existir código
       revisor-codigo.md         # subagente read-only: audita o diff antes de cada commit
       verificador-spec.md       # subagente read-only: verifica specs em paralelo no spec-review
       implementador-spec.md     # subagente Sonnet: implementa specs grandes isoladas do contexto principal
@@ -89,13 +90,16 @@ No Windows, `~/.claude/` equivale a `C:\Users\<usuario>\.claude\`.
 
 ### 3. (Opcional) Ative os agentes e o hook de gate
 
-Os subagentes são chamados automaticamente pelas skills: `revisor-codigo` e `verificador-spec` pelo `spec-close`/`spec-review` (só leitura), e `implementador-spec` pelo `implementar` quando a spec é grande (score ≥ 6). Para ativá-los, copie os arquivos para `~/.claude/agents/`:
+Os subagentes são chamados automaticamente pelas skills: `revisor-codigo` e `verificador-spec` pelo `spec-close`/`spec-review` (só leitura), e `escritor-testes` + `implementador-spec` pelo `implementar`. Para ativá-los, copie os arquivos para `~/.claude/agents/`:
 
 ```
+~/.claude/agents/escritor-testes.md
 ~/.claude/agents/revisor-codigo.md
 ~/.claude/agents/verificador-spec.md
 ~/.claude/agents/implementador-spec.md
 ```
+
+> O `escritor-testes` é o único que não é opcional na prática: sem ele o `/implementar` não tem os testes prontos para a implementação fazer passar, e a separação entre quem escreve o teste e quem escreve o código deixa de existir.
 
 O hook (`.claude/hooks/check-spec-revisao.ps1`) bloqueia edição de código enquanto alguma spec do projeto estiver com `Revisão: pendente`. Ele é opcional e configurado **por projeto**, não globalmente: copie a pasta `.claude/hooks/` para o seu projeto e registre o hook copiando `.claude/settings.json.example` para `.claude/settings.json` do projeto (ajuste o caminho se necessário — `${CLAUDE_PROJECT_DIR}` é resolvido automaticamente pelo Claude Code).
 

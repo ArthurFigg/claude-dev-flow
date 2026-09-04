@@ -124,8 +124,16 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 
 Para cada spec, na ordem recomendada pelo spec-review:
 
-**a)** Rode: `/implementar {nome_da_spec}`  
-A skill lê o campo `**Score:**` da spec e decide: se for pequena (≤ 5), implementa inline na própria sessão; se for grande (≥ 6), delega ao subagente `implementador-spec` (Sonnet), que implementa isolado e devolve só o relatório — sem carregar todo o código escrito na conversa principal. Nos dois casos, código + testes saem prontos e rodados.
+**a)** Rode: `/implementar {nome_da_spec}`
+
+A skill roda em duas etapas, com atores diferentes:
+
+1. **Testes primeiro.** O subagente `escritor-testes` (Sonnet) lê só a spec e as convenções — nunca o código, que ainda não existe — e escreve os testes a partir da seção "Critérios verificáveis". Devolve o mapa de qual critério virou qual teste. Roda sempre, independente do score.
+2. **Código depois.** A skill lê o `**Score:**` da spec e decide: pequena (≤ 5) implementa inline; grande (≥ 6) delega ao subagente `implementador-spec` (Sonnet), que implementa isolado e devolve só o relatório — sem carregar todo o código escrito na conversa principal. Nos dois casos a implementação **não pode tocar em `tests/`**, e no fim a skill confere isso com `git diff --stat -- tests/`.
+
+**Por que os dois papéis são separados:** quando a mesma passada escreve o código e o teste, o teste confirma o código, não a spec. Se um critério foi entendido errado, ele é entendido errado nos dois lugares, o `pytest` fica verde e o gate do `/spec-close` não detecta nada — o teste passa a provar apenas que o código concorda consigo mesmo. Escrever o teste antes, a partir da spec, e proibir a implementação de editá-lo é o que devolve sentido ao gate.
+
+Se um teste parecer errado durante a implementação, ele **não é consertado**: vira um bloco `TESTE EM CONFLITO` no relatório, e você decide se o errado é o teste ou a spec. Conflito assim quase sempre é ambiguidade da spec aparecendo — no lugar barato de corrigir.
 
 **b)** Quando terminar, rode: `/spec-close {nome_da_spec}`
 
@@ -276,7 +284,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/spec` | Cria a spec de uma feature |
 | `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
 | `/planejar-setup` | Decide versão do Python, deps e estrutura de pastas; documenta no CLAUDE.md |
-| `/implementar [nome]` | Implementa a spec: inline se pequena, via subagente `implementador-spec` se grande |
+| `/implementar [nome]` | Testes primeiro (subagente `escritor-testes`), depois o código: inline se a spec for pequena, via subagente `implementador-spec` se for grande |
 | `/spec-close [nome]` | Fecha uma spec: pytest + revisão do diff + commit |
 | `/reabrir-spec [nome]` | Reabre uma spec concluída para nova revisão |
 | `/encerrar-projeto` | Encerramento formal: pytest + README + CHANGELOG + commit + tag |
@@ -285,7 +293,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/readme` | Gera o README.md quando o projeto estiver pronto |
 | `/diagrama` | Desenha arquitetura e modelo de dados em Mermaid, numa região marcada do README |
 
-Os subagentes (`revisor-codigo`, `verificador-spec`) e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README para ativação — e reforçam automaticamente etapas que as skills acima já cobrem por instrução.
+Os subagentes `revisor-codigo` e `verificador-spec` e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README para ativação — e reforçam automaticamente etapas que as skills acima já cobrem por instrução. O `escritor-testes` é diferente: sem ele o `/implementar` não tem testes prontos para a implementação fazer passar, e a separação entre quem escreve o teste e quem escreve o código deixa de existir.
 
 ---
 
@@ -434,7 +442,9 @@ Até certo ponto, este fluxo dependia só de instrução em texto (a IA lê a re
 
 **Hook:** um script que o Claude Code executa automaticamente antes (ou depois) de uma ferramenta ser usada — por exemplo, antes de qualquer edição de arquivo. O hook deste fluxo (`check-spec-revisao.ps1`) roda antes de toda edição e verifica se existe alguma spec com `Revisão: pendente` no projeto atual. Se existir, a edição é recusada — não é um lembrete de texto que a IA pode ignorar por engano, é uma barreira técnica.
 
-**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa três: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo, também só leitura) e `implementador-spec` (dentro do `/implementar`, rodando em Sonnet, este com permissão de escrita para gerar o código de specs grandes isolado do contexto principal). Os dois primeiros só reportam e nunca decidem sozinhos; o terceiro escreve o código mas devolve o controle para o `/spec-close` fazer o gate de testes e commit.
+**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa quatro: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo, também só leitura), `escritor-testes` (dentro do `/implementar`, em Sonnet, escreve os testes da spec antes de existir código) e `implementador-spec` (dentro do `/implementar`, também em Sonnet, escreve o código de specs grandes isolado do contexto principal). Os dois primeiros só reportam e nunca decidem sozinhos; os dois últimos escrevem, mas devolvem o controle para o `/spec-close` fazer o gate de testes e commit.
+
+O par `escritor-testes` + `implementador-spec` mostra um segundo uso do isolamento: não é só economia de contexto, é **separação de papéis**. O escritor não vê o código porque ele ainda não existe; o implementador não pode editar `tests/`. Nenhum dos dois consegue fechar o ciclo sozinho, e é justamente por isso que o `pytest` verde no fim significa alguma coisa. Um único agente fazendo os dois trabalhos produziria o mesmo resultado aparente — testes verdes — sem a mesma garantia.
 
 **Por que isso importa mais do que parece:** escopo restrito de ferramentas é uma garantia técnica, não uma promessa de comportamento. Um subagente sem acesso a `Edit` ou `Write` fisicamente não consegue alterar código, mesmo que "quisesse" — diferente de só instruir "não edite nada" num prompt, que depende da IA seguir a instrução.
 
