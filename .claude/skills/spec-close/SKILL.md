@@ -17,7 +17,7 @@ Voce e o gate entre "implementado" e "pronto". Ao executar esta skill, voce roda
 
 # OBJETIVO
 
-Rodar `uv run pytest -v`, e se todos os testes passarem: marcar a spec como concluida e commitar. Se falharem: exibir os erros e parar.
+Rodar o comando de teste do projeto, e se todos os testes passarem: marcar a spec como concluida e commitar. Se falharem: exibir os erros e parar.
 
 # INPUT ESPERADO
 
@@ -110,9 +110,9 @@ Se o usuario responder **sim**: continue para o PASSO 2.
 
 ## PASSO 2 — Rodar os testes
 
-Execute:
+O comando de teste e o do CLAUDE.md do projeto quando ele define um (secao "Comando de teste deste projeto" ou equivalente); sem isso, `uv run pytest -v`. Execute:
 ```
-uv run pytest -v
+uv run pytest -v   # ou o comando do CLAUDE.md do projeto
 ```
 
 Aguarde a conclusao completa. Capture o output inteiro.
@@ -426,7 +426,7 @@ Antes de encerrar, verifique:
 - [ ] O modo (implementacao ou revisao) foi detectado pelo status da spec?
 - [ ] Modulos de UI foram verificados na secao "Modulos afetados"?
 - [ ] Se UI detectada: checklist visual foi gerado a partir da secao "Comportamento" e confirmado pelo usuario?
-- [ ] `uv run pytest -v` foi executado com output completo capturado?
+- [ ] O comando de teste do projeto (padrao `uv run pytest -v`) foi executado com output completo capturado?
 - [ ] O commit foi bloqueado se houve qualquer falha ou erro nos testes?
 - [ ] A revisao do diff foi feita (agente, se a implementacao nao foi feita nesta sessao, ou inline, se foi) e o relatorio exibido antes do PASSO 4?
 - [ ] Se a revisao foi inline, o diff foi relido de verdade contra os quatro criterios, sem assumir que ja estava correto?

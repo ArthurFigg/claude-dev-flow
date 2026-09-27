@@ -63,26 +63,26 @@ Copie para `~/.claude/CLAUDE.md` (Windows: `C:\Users\<usuario>\.claude\CLAUDE.md
 
 ### 2. Instale as skills
 
-Cada pasta em `.claude/skills/` contém um `SKILL.md`. Para ativar cada skill como um slash command no Claude Code, copie o `SKILL.md` para a pasta global de comandos com o nome da skill:
+Cada pasta em `.claude/skills/` contém um `SKILL.md`. Copie as pastas inteiras para `~/.claude/skills/`, mantendo o nome — cada uma vira um slash command (`/spec`, `/implementar`...):
 
 ```
-~/.claude/commands/auditar-claude-md.md
-~/.claude/commands/dominio.md
-~/.claude/commands/contrato.md
-~/.claude/commands/spec.md
-~/.claude/commands/spec-review.md
-~/.claude/commands/planejar-setup.md
-~/.claude/commands/implementar.md
-~/.claude/commands/spec-close.md
-~/.claude/commands/reabrir-spec.md
-~/.claude/commands/encerrar-projeto.md
-~/.claude/commands/session-start.md
-~/.claude/commands/git-skill.md
-~/.claude/commands/readme.md
-~/.claude/commands/diagrama.md
+~/.claude/skills/auditar-claude-md/SKILL.md
+~/.claude/skills/dominio/SKILL.md
+~/.claude/skills/contrato/SKILL.md
+~/.claude/skills/spec/SKILL.md
+~/.claude/skills/spec-review/SKILL.md
+~/.claude/skills/planejar-setup/SKILL.md
+~/.claude/skills/implementar/SKILL.md
+~/.claude/skills/spec-close/SKILL.md
+~/.claude/skills/reabrir-spec/SKILL.md
+~/.claude/skills/encerrar-projeto/SKILL.md
+~/.claude/skills/session-start/SKILL.md
+~/.claude/skills/git-skill/SKILL.md
+~/.claude/skills/readme/SKILL.md
+~/.claude/skills/diagrama/SKILL.md
 ```
 
-> Alternativamente, cada skill pode ser instalada como `~/.claude/skills/{nome}/SKILL.md` (mesmo conteúdo) — é o formato usado neste repositório. O nome do arquivo é em maiúsculas: no Linux, `Skill.md` não é encontrado e a skill simplesmente não carrega, sem erro.
+> O nome do arquivo é em maiúsculas: no Linux, `Skill.md` não é encontrado e a skill simplesmente não carrega, sem erro. O formato antigo `~/.claude/commands/{nome}.md` ainda funciona, mas não é o usado aqui.
 
 Copie também `.claude/templates/_decisoes.md` para `~/.claude/templates/_decisoes.md`. Ele não é uma skill: é o template que `/dominio`, `/contrato`, `/planejar-setup` e `/spec-close` consultam para saber o que entra no registro de decisões transversais do projeto. O critério mora nesse arquivo único justamente para não ser copiado dentro de quatro skills e desalinhar na primeira edição.
 

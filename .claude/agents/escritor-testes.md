@@ -54,6 +54,7 @@ Estrutura: `tests/` espelhando a estrutura do projeto (`tests/usuarios/test_serv
 Convencoes obrigatorias:
 
 - Arquivo `test_{modulo}.py`, funcao `test_{cenario}_{resultado_esperado}()`
+- **Projeto com outra ferramenta de teste** (o CLAUDE.md do projeto diz qual, ex.: `vitest`): siga as convencoes dela e a pasta que o CLAUDE.md indicar — arquivo `{modulo}.test.ts`, `describe` por modulo, `it("{cenario} {resultado esperado}")`. As outras regras desta lista continuam valendo
 - **Um assert logico por teste.** Se precisou de dois, sao dois testes.
 - Testes independentes — a ordem de execucao nao pode importar
 - Fixtures quando houver setup repetido
@@ -66,7 +67,7 @@ Se um criterio for ambiguo demais pra virar teste, **nao chute**: escreva o test
 
 ## PASSO 4 — Rodar e conferir o motivo da falha
 
-Rode o comando de teste do projeto (tipicamente `uv run pytest -v`).
+Rode o comando de teste do projeto (o do CLAUDE.md do projeto; sem ele, `uv run pytest -v`).
 
 Os testes **devem falhar** — a implementacao nao existe. O que voce confere e o **motivo**:
 

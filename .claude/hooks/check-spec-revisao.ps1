@@ -19,6 +19,8 @@ $normalized = $filePath -replace '/', '\'
 # (auditar-claude-md, planejar-setup) nunca e bloqueado.
 if ($normalized -match '\\\.claude\\specs\\') { exit 0 }
 if ((Split-Path $normalized -Leaf) -ieq 'CLAUDE.md') { exit 0 }
+# Memoria do Claude Code nao e implementacao.
+if ($normalized -match '\\\.claude\\projects\\[^\\]+\\memory\\') { exit 0 }
 
 $specsDir = Join-Path $cwd '.claude\specs'
 if (-not (Test-Path $specsDir)) { exit 0 }

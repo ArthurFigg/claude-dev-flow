@@ -117,6 +117,8 @@ Antes de orientar o proximo passo, confirme que `tests/` continua como o `escrit
 git diff --stat -- tests/
 ```
 
+Se o CLAUDE.md do projeto listar outras pastas de teste (ex.: `recorte/tests/`), inclua todas no mesmo comando.
+
 Se aparecer qualquer alteracao ali, **avise o usuario em destaque**. Teste alterado durante a implementacao anula a separacao inteira: o `pytest` verde do `/spec-close` deixa de provar que a spec foi cumprida. Mostre o diff e deixe ele decidir se reverte.
 
 Se o projeto ainda nao tiver git inicializado, pule esta conferencia e diga que pulou.

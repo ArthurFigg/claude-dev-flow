@@ -382,9 +382,9 @@ O CLAUDE.md global define que o código deve ser organizado por feature/domínio
 O Claude Code lê arquivos específicos antes de cada conversa:
 - **CLAUDE.md global:** em `~/.claude/CLAUDE.md` (Windows: `C:\Users\<usuario>\.claude\CLAUDE.md`)
 - **CLAUDE.md do projeto:** em `.claude/CLAUDE.md` ou `CLAUDE.md` na raiz
-- **Skills:** arquivos `.md` em `~/.claude/commands/` (Windows: `C:\Users\<usuario>\.claude\commands\`)
+- **Skills:** uma pasta por skill em `~/.claude/skills/{nome}/SKILL.md` (Windows: `C:\Users\<usuario>\.claude\skills\`)
 
-Quando você digita `/spec`, o Claude Code lê o arquivo `~/.claude/commands/spec.md` e usa o conteúdo como instrução. É essencialmente um "prompt" (instrução para a IA) salvo em arquivo.
+Quando você digita `/spec`, o Claude Code lê o arquivo `~/.claude/skills/spec/SKILL.md` e usa o conteúdo como instrução. É essencialmente um "prompt" (instrução para a IA) salvo em arquivo.
 
 **Termos para pesquisar:**
 - "Claude Code CLAUDE.md documentation"
