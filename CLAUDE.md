@@ -159,6 +159,7 @@ usuarios/
 * Obrigatório em funções públicas com lógica não-trivial.
 * Dispensável em funções curtas e óbvias, mesmo que públicas.
 * Evitar `Any` — se usado, comentar o motivo.
+* Rodar checador de tipo (`pyright`, dependência de dev) — sem ele, a anotação não pega bug.
 * `TypeVar`, `Protocol`, `Generic` apenas quando genuinamente necessário.
 
 ---
@@ -175,11 +176,11 @@ usuarios/
 
 * Formatador: `ruff format`. Linter: `ruff check`. Linha máxima: **88 chars**.
 * Sem `import *`. Imports explícitos, agrupados: stdlib → third-party → local.
-* Early return para reduzir nesting. Sem `else` após `return`/`raise`.
+* Early return para reduzir nesting.
 * Preferir composição a herança. Herança só com relação "é um" real.
 * Funções acima de 20 linhas são candidatas a refatoração — sinalizar antes de escrever.
 * Evitar flags booleanas como parâmetro (`processar(dados, True)`) — usar enum ou funções separadas.
-* Exceções específicas do domínio em `excecoes.py`. Nunca `except Exception: pass`.
+* Exceções específicas do domínio em `excecoes.py`.
 * Async: **somente se explicitamente pedido**. Não sugerir nem usar async por padrão.
 
 ---
@@ -199,16 +200,15 @@ usuarios/
 * Variáveis de ambiente via `.env` + `pydantic-settings` ou `python-dotenv`.
 * `.env.example` obrigatório com todas as variáveis necessárias (sem valores reais).
 * Nunca hardcodar secrets, URLs de produção ou configurações de ambiente.
-* **Versioning de dependências:** sempre definir teto de versão (`>=x,<y`) em dependências de produção — nunca só limite inferior. Minor/patch não costumam quebrar; major quase sempre quebra. Teto padrão: `<(major+1).0.0`. Exceção: dependências internas do próprio projeto.
+* **Versões de dependências:** commitar o `uv.lock` — é ele que trava as versões do app. Versão menor também quebra, então teto (`<x`) só com motivo concreto (quebra conhecida), anotado ao lado. Atualizar com `uv lock --upgrade` e rodar o pytest.
 * **Seed de demonstração:** em projetos com dashboard ou UI de análise, criar `seed.py` junto com a spec de UI — não depois. Dados reais revelam problemas visuais que testes unitários não detectam.
-* **Banco de dados em desenvolvimento: SQLite por padrão**, a menos que o projeto exija recurso exclusivo do PostgreSQL (ex: `LISTEN/NOTIFY`, extensões como `pgvector`, Full Text Search nativo). Quando usar SQLite: tipos genéricos do SQLAlchemy (`Uuid`, `JSON`) em vez de `postgresql.UUID`/`postgresql.JSONB`; `create_all` no startup para dev; Alembic só para produção com PostgreSQL.
+* **Banco de dados: o mesmo no desenvolvimento e na produção.** SQLite só se a produção também for SQLite (app local, desktop, protótipo). Produção em PostgreSQL → PostgreSQL também no dev (ex.: container). Diferença entre bancos faz código que passou nos testes quebrar em produção.
 
 ---
 
 ## Proibições Absolutas
 
 * Nunca `eval()` ou `exec()` sem discussão explícita de segurança.
-* Nunca `except Exception: pass` — silenciar erros é pior que deixar quebrar.
 * Nunca misturar lógica de negócio com acesso a dados.
 * Nunca retornar `None` implicitamente de funções que deveriam retornar dados — tipar como `Optional[T]`.
 * Nunca `print()` em código não-script — usar `logging`.

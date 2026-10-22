@@ -27,7 +27,7 @@ livre do usuario depois, em conversa normal.
 # OBJETIVO
 
 Entregar uma secao "Setup do ambiente" no CLAUDE.md do projeto, com cada
-decisao (versao do Python, dependencias com teto de versao, estrutura
+decisao (versao do Python, dependencias travadas no `uv.lock`, estrutura
 minima de pastas, variaveis de `.env`) registrada e justificada — pronta
 para o usuario pedir a execucao quando quiser.
 
@@ -51,7 +51,7 @@ gere um primeiro antes de planejar o setup.
 # ESTRUTURA DE OUTPUT
 
 1. Plano exibido no chat (versao do Python + motivo, dependencias
-   producao/dev com teto de versao, estrutura minima de pastas, variaveis
+   producao/dev (versoes travadas no `uv.lock`), estrutura minima de pastas, variaveis
    de `.env.example`)
 2. Secao "Setup do ambiente" escrita no CLAUDE.md do projeto, com o mesmo
    conteudo do plano
@@ -87,8 +87,8 @@ justifique a escolha.
 
 **Dependencias:** parta da secao "Modulos afetados" da primeira spec (nao
 so da stack geral do CLAUDE.md) pra saber exatamente o que ela exige pra
-rodar. Tudo de producao com teto de versao `>=x,<y` (regra global do
-usuario). `pytest` sempre entra como dev dependency. Se o projeto expoe uma API HTTP
+rodar. Versoes ficam travadas no `uv.lock` commitado (regra global do
+usuario); teto `<x` so com motivo concreto, anotado ao lado. `pytest` e `pyright` sempre entram como dev dependency. Se o projeto expoe uma API HTTP
 (existe `openapi.yaml` na raiz), as deps base sao `fastapi`, `pydantic` e
 `uvicorn`, e `schemathesis` entra como dev dependency pro teste de contrato que
 barra drift (compara o OpenAPI gerado pelo FastAPI com o `openapi.yaml`
@@ -121,8 +121,8 @@ plano, sem ambiguidade de interpretacao.
 **Comandos de execucao:**
 ```bash
 uv init --python {versao}
-uv add {dep1>=x,<y} {dep2>=x,<y}
-uv add --dev {dev_dep>=x,<y}
+uv add {dep1} {dep2}
+uv add --dev pytest pyright {dev_dep}
 ```
 
 **Pastas a criar:**
@@ -150,18 +150,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - run: uv sync
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --locked
       - run: uv run pytest -v
 ```
 ```
 
-Preencha cada bloco com os valores decididos no PASSO 2. Nao omita nenhuma
+Preencha cada bloco com os valores decididos no PASSO 2. Dependencia vai sem versao no comando: o `uv add` grava o piso (`>=`) no `pyproject.toml` e o `uv.lock` trava o resto. Teto so com motivo concreto, escrito como `{dep}<x  # motivo`. Nao omita nenhuma
 subsecao — se nao houver valor (ex: nenhuma variavel de ambiente), escreva
 "nenhuma" em vez de suprimir o campo.
 
-O bloco de CI e sempre identico — nao varia por projeto. O `setup-uv` le
+O bloco de CI e sempre identico — nao varia por projeto. Versoes das actions conferidas em 11/10/2026 (checkout v7, setup-uv v10). `--locked` faz o CI falhar se o `uv.lock` estiver desatualizado em relacao ao `pyproject.toml`; se o GitHub avisar de action velha, atualize aqui. O `setup-uv` le
 a versao do Python automaticamente do `.python-version` gerado pelo `uv init`.
 
 ## PASSO 4 — Registrar decisoes transversais
@@ -176,9 +176,9 @@ impuser um jeito de organizar que as specs seguintes vao herdar.
 
 **Cuidado especial aqui com a segunda exclusao do criterio de corte.** Boa parte
 do que voce decide neste passo nao e decisao do projeto — e obediencia ao CLAUDE.md
-global: teto de versao em dep de producao, `pytest` como dev dependency,
-organizacao por dominio em vez de por tipo de arquivo, SQLite como padrao de
-desenvolvimento. Nada disso entra. So entra o que voce **escolheu para este
+global: `uv.lock` commitado, `pytest` como dev dependency,
+organizacao por dominio em vez de por tipo de arquivo, mesmo banco no dev e na
+producao. Nada disso entra. So entra o que voce **escolheu para este
 projeto**, com alternativa real na mesa. Se a justificativa da entrada for "e a
 regra global", ela nao devia estar sendo escrita.
 
@@ -199,7 +199,7 @@ executar sem precisar interpretar prosa.
 
 - Nunca instalar dependencia, baixar interpretador ou criar arquivo de
   codigo/configuracao do projeto — o unico arquivo editado e o CLAUDE.md
-- Nunca incluir dependencia de producao sem teto de versao (`>=x,<y`)
+- Nunca deixar o `uv.lock` fora do commit; teto `<x` so com motivo anotado
 - Nunca planejar pastas ou modulos de specs futuras
 - Nunca commitar ou tocar em `.gitignore`/`.gitattributes`/git de qualquer
   forma
@@ -213,7 +213,7 @@ Antes de encerrar, verifique:
 - [ ] O conteudo da primeira spec foi lido (nao so o nome/numero), quando
       `.claude/specs/` existir?
 - [ ] O plano lista versao do Python com motivo?
-- [ ] Toda dependencia de producao tem teto de versao?
+- [ ] O `uv.lock` esta previsto no commit, e todo teto `<x` tem motivo anotado?
 - [ ] So as dependencias/pastas que a primeira spec exige entraram no
       plano — o resto foi listado como futuro?
 - [ ] A secao "Setup do ambiente" foi escrita no CLAUDE.md com as mesmas
@@ -235,8 +235,9 @@ PLANO DE SETUP — projeto-exemplo
 Python: 3.12 (penultima estavel — 3.13 muito recente, libs de PDF/grafico
 costumam demorar a dar suporte total)
 
-Producao: sqlalchemy>=2.0,<3.0 (spec 01_persistencia)
-Dev:      pytest>=8.0,<9.0
+Producao: sqlalchemy (spec 01_persistencia)
+Dev:      pytest, pyright
+Versoes: travadas no uv.lock (sem teto)
 
 Ficam de fora agora: pandas (spec 03), google-genai (spec 04),
 xhtml2pdf/jinja2/matplotlib (spec 05), watchdog (spec 07)
@@ -258,8 +259,8 @@ Secao escrita no CLAUDE.md (template obrigatorio):
 **Comandos de execucao:**
 ```bash
 uv init --python 3.12
-uv add sqlalchemy>=2.0,<3.0
-uv add --dev pytest>=8.0,<9.0
+uv add sqlalchemy
+uv add --dev pytest pyright
 ```
 
 **Pastas a criar:**

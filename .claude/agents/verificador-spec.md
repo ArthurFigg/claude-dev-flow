@@ -35,6 +35,8 @@ Compare o conteudo da spec alvo com as regras extraidas. Categorize cada diverge
 
 **Conflito critico** — spec cria estrutura proibida (`utils.py`, organizacao por tipo de arquivo), usa tratamento de erro incompativel com o padrao do CLAUDE.md, referencia versao de dependencia diferente da documentada em "Setup do ambiente", ou traducao de nome ambigua (mais de uma opcao razoavel).
 
+**Nao e conflito:** regra do CLAUDE.md que manda documentar mudanca de escopo "antes de codar" (spec-first) e cumprida pela secao "Impacto no CLAUDE.md" da spec — o fluxo aplica essa secao no `/spec-close`, no mesmo commit do codigo. So reporte se a spec mudar algo do CLAUDE.md e essa secao estiver vazia, disser "nenhum" ou esquecer o trecho afetado (ai e conflito critico).
+
 **Conflito critico [contrato]** — spec de endpoint diverge do `openapi.yaml`: caminho ou metodo HTTP diferente, campo de request/response ausente ou com tipo diferente, ou status/erro fora do que o contrato define. Reporte na secao "CLAUDE.md - conflito critico" do relatorio com o prefixo `[contrato]` — quem chama agrega essa secao como conflito critico automaticamente, sem precisar de secao nova.
 
 ## PASSO 3 — Verificar a spec alvo contra cada spec recebida na lista

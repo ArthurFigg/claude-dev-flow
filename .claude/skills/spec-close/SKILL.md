@@ -11,7 +11,7 @@ Voce e o gate entre "implementado" e "pronto". Ao executar esta skill, voce roda
 
 1. Nunca commitar se qualquer teste falhar — sem excecoes.
 2. Nunca pedir confirmacao da mensagem de commit — ela e derivada da spec automaticamente.
-3. Nunca marcar a spec como concluida antes do commit ser bem-sucedido.
+3. A marcacao de concluida (PASSO 4) entra no mesmo commit; se o commit falhar, desfaca a marcacao.
 4. Nunca pular o gate de pytest por nenhum motivo.
 5. Nunca usar mensagem de commit generica — sempre derivar do titulo da spec.
 
@@ -32,7 +32,7 @@ Exemplos validos que o usuario pode fornecer:
 
 **Se testes passam:**
 1. Resultado do pytest resumido (X passando)
-2. Relatorio do revisor-codigo (achados ou "nenhum problema")
+2. Veredito do relatorio da Etapa 4 (ou achados do revisor-codigo, quando nao ha relatorio)
 3. Spec marcada como concluida no arquivo
 4. Commit criado e push executado
 5. Confirmacao com hash do commit
@@ -148,38 +148,43 @@ Exiba:
 ✅ [X] testes passando.
 ```
 
+Passe para o PASSO 3C.
+
+---
+
+## PASSO 3C — Relatorio da Etapa 4 (o que o usuario aprovou)
+
+Procure `.claude/specs/_relatorios/{nome}.md` (gravado pelo `/implementar`, PASSO 8).
+
+- **Existe:** mostre a linha do veredito. Compare o total de testes do PASSO 2 com o da
+  secao 3 do relatorio. Se o veredito nao for `CUMPRE` ou os totais nao baterem, pare e
+  pergunte se segue — o usuario aprovou outra coisa. O relatorio e o `{nome}-pytest.txt`
+  entram no commit (o `git add -A` do PASSO 5 ja inclui): ficam como prova do que foi
+  aprovado, ligado a spec.
+- **Nao existe** (spec implementada antes de 10/10 ou fora do `/implementar`): avise em
+  uma linha e siga; o PASSO 3D chama o `revisor-codigo`.
+
 Passe para o PASSO 3D.
 
 ---
 
-## PASSO 3D — Revisao automatica do diff (revisor-codigo ou inline)
+## PASSO 3D — Conferencia do diff
 
-Antes de marcar a spec como concluida, o diff precisa ser revisado contra quatro criterios, nesta ordem de prioridade:
+O codigo ja foi lido contra a spec pelo Claude dentro do `/implementar` (camada 3), e os testes acabaram de rodar (PASSO 2). Aqui so o que falta:
 
-1. **Correcao**: o codigo faz o que a secao "Comportamento" da spec descreve? Ha caso de borda descrito na spec que nao foi tratado?
-2. **Seguranca**: ha segredo hardcoded (chave de API, senha, token)? Input de usuario usado sem validacao em query, comando de shell ou path de arquivo?
-3. **Escopo**: algum arquivo da secao "Nao mexer" foi alterado sem necessidade?
-4. **Convencao do projeto**: se houver CLAUDE.md no diretorio, o codigo segue as convencoes dele (idioma, estrutura, tratamento de erro)?
+1. **"Nao mexer":** rode `git diff HEAD --name-only` + `git ls-files --others --exclude-standard` e confira se algum arquivo listado na secao "Nao mexer" da spec foi alterado. Arquivo que tambem esta em "Modulos afetados" nao conta (confira o trecho lendo o diff).
+2. **Se nao ha relatorio da Etapa 4 (PASSO 3C) ou esta sessao NAO rodou o `/implementar` desta spec:** chame o agente `revisor-codigo` (via Agent tool), passando o caminho da spec e o diretorio atual — ninguem leu o codigo nesta sessao.
+3. **Arquivos soltos fora do git** (mais velhos que o ultimo commit, sem relacao com a spec): liste em uma linha e sugira commitar ou pôr no `.gitignore`.
 
-**Decida como revisar:**
-- **Se voce implementou esta spec nesta mesma sessao** (o codigo que vai ser commitado foi escrito ou editado por voce agora, nos passos anteriores desta conversa — o conteudo ja esta no seu contexto): revise inline, voce mesmo, sem chamar o agente. A leitura ja foi paga; chamar o subagente pagaria de novo um custo fixo de inicializacao por um conteudo que voce ja tem.
-- **Caso contrario** (sessao retomada, implementacao nao foi feita por voce nesta conversa, ou voce nao tem certeza de ter visto o diff inteiro): chame o agente `revisor-codigo` (via Agent tool), passando o caminho da spec (`.claude/specs/{nome}.md`) e o diretorio atual.
-
-**Ao revisar inline, combata vies de confirmacao explicitamente** — voce acabou de escrever esse codigo, entao nao assuma que esta certo so porque foi voce quem fez. Releia o diff de verdade (`git diff HEAD` + arquivos untracked, exatamente como o agente faria) como se estivesse vendo pela primeira vez, procurando ativamente motivo pra estar errado em cada um dos quatro criterios acima, nao so confirmando o que ja pensava. Nao aponte estilo subjetivo, nomes de variavel que voce faria diferente, ou reorganizacoes que nao mudam comportamento.
-
-Aguarde o resultado (do agente ou da sua propria revisao) antes de continuar.
-
-**Se nada for encontrado:** exiba a confirmacao e passe direto para o PASSO 4, sem perguntar nada ao usuario.
-
-**Se um ou mais problemas forem encontrados:** exiba a lista completa e pergunte:
+**Se algo foi encontrado:** exiba a lista completa e pergunte:
 ```
-Revisao automatica encontrou o(s) problema(s) acima.
+A conferencia encontrou o(s) problema(s) acima.
 Corrigir antes de continuar, ou commitar mesmo assim? (corrigir/commitar)
 ```
-Aguarde a resposta do usuario.
+- **corrigir:** pare aqui. Nao marque a spec como concluida nem commite.
+- **commitar mesmo assim:** continue para o PASSO 4.
 
-- Se o usuario responder **corrigir** (ou equivalente): pare aqui. Nao marque a spec como concluida nem commite. O usuario vai corrigir e rodar `/spec-close` novamente.
-- Se o usuario responder **commitar mesmo assim** (ou equivalente): continue para o PASSO 4 normalmente.
+**Se nada foi encontrado:** siga para o PASSO 4.
 
 ---
 
@@ -406,14 +411,13 @@ Specs pendentes: [lista]
 
 - Nunca commitar se qualquer teste falhar
 - Nunca pedir confirmacao da mensagem de commit
-- Nunca marcar spec como concluida antes do commit ter sucesso
+- Nunca deixar a spec marcada como concluida se o commit falhar — desfaca a marcacao
 - Nunca usar `git push --force`
 - Nunca commitar arquivos `.env`, `*.key`, `secrets.*`
 - Nunca executar `git add -A` sem antes verificar arquivos untracked com padroes suspeitos (`*.db`, `*.sqlite*`, `*.log`, `*.csv`, dados gerados em runtime)
 - Nunca pular a verificacao visual (PASSO 1.5) quando modulos de UI forem detectados na spec
 - Nunca commitar se o usuario reportar problema visual no checklist de UI
-- Nunca pular a revisao do diff (PASSO 3D) antes de marcar a spec como concluida, seja ela via agente ou inline
-- Nunca revisar inline assumindo que o codigo ja esta certo so porque foi voce quem escreveu — reler o diff de verdade contra os quatro criterios
+- Nunca pular a conferencia do diff (PASSO 3D) antes de marcar a spec como concluida
 - Nunca commitar se o usuario escolher "corrigir" apos ver os achados do revisor-codigo
 - Nunca usar mensagem generica como "atualiza codigo" ou "correcoes"
 - Nunca pular o PASSO 4.5 quando a spec tem "Impacto no CLAUDE.md" diferente de "nenhum" — o CLAUDE.md nao pode ficar descrevendo arquivos/comandos que a spec removeu
@@ -428,11 +432,12 @@ Antes de encerrar, verifique:
 - [ ] Se UI detectada: checklist visual foi gerado a partir da secao "Comportamento" e confirmado pelo usuario?
 - [ ] O comando de teste do projeto (padrao `uv run pytest -v`) foi executado com output completo capturado?
 - [ ] O commit foi bloqueado se houve qualquer falha ou erro nos testes?
-- [ ] A revisao do diff foi feita (agente, se a implementacao nao foi feita nesta sessao, ou inline, se foi) e o relatorio exibido antes do PASSO 4?
-- [ ] Se a revisao foi inline, o diff foi relido de verdade contra os quatro criterios, sem assumir que ja estava correto?
+- [ ] O relatorio da Etapa 4 (PASSO 3C) foi lido, com veredito e total de testes conferidos?
+- [ ] A conferencia do diff (PASSO 3D) foi feita e o resultado exibido antes do PASSO 4?
 - [ ] Se o revisor encontrou problemas, o usuario foi perguntado e a escolha dele respeitada?
 - [ ] Arquivos untracked com padroes suspeitos foram verificados antes do `git add -A`?
 - [ ] A decisao do usuario sobre arquivos suspeitos foi aplicada antes de continuar?
+- [ ] "Nao mexer" conferido, e o `revisor-codigo` chamado se esta sessao nao rodou o `/implementar`?
 - [ ] A spec foi marcada como concluida no arquivo?
 - [ ] A secao "Impacto no CLAUDE.md" foi lida e, se diferente de "nenhum", as secoes indicadas foram sincronizadas antes do commit (PASSO 4.5)?
 - [ ] As "Decisoes tomadas" da spec passaram pelo criterio de corte (PASSO 4.6), promovendo so o que restringe mais de uma spec — e nada, se for o caso?

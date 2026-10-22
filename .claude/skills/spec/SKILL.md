@@ -14,7 +14,7 @@ Voce nao implementa nada. Voce so pergunta, decide junto com o usuario, e gera o
 1. Nunca implemente codigo — esta skill so pergunta e gera spec.
 2. Faca uma pergunta por vez quando a resposta de uma afeta a proxima; decisoes genuinamente independentes entre si podem ser agrupadas numa unica chamada com multiplas perguntas. Da mais critica para a menos critica.
 3. Nunca invente decisoes — toda informacao nova vem do usuario.
-4. Nunca duplique o que ja esta no CLAUDE.md — a spec referencia, nao repete.
+4. Nunca duplique o que ja esta no CLAUDE.md — a spec referencia, nao repete. O mesmo vale entre specs: a assinatura de algo que outra spec cria nunca e repetida aqui — so o nome, em "Usa de outras specs". Fato escrito em dois lugares e o que gera contradicao entre specs (teste de 06/10: o juiz rapido pegou 30% das contradicoes no formato antigo e 92% com esta regra).
 5. Criterios devem ser verificaveis por comando (`pytest`, `curl`, execucao direta). Se nao da pra verificar com um comando, reescreva ate dar.
 6. A spec responde "o que implementar agora". O CLAUDE.md responde "como o projeto funciona". Nunca misture os dois.
 
@@ -59,6 +59,21 @@ Uma frase clara descrevendo o comportamento externo da feature.
 - Lista de comportamentos especificos e observaveis
 - Cada item descreve um caso: "quando X acontece, Y deve ocorrer"
 - Incluir casos de borda relevantes
+
+## Regras
+<!-- Uma regra por linha: uma situacao, um componente, uma acao. Soma ao "Comportamento", nao substitui. -->
+- QUANDO {situacao}, o {componente} DEVE {acao}.
+
+## Interfaces públicas
+<!-- So o que OUTRAS specs vao usar desta. Assinatura exata, escrita uma vez so, aqui. -->
+- `nome_da_funcao(param1, param2) -> Retorno` — em `src/modulo/arquivo.py`
+- `NomeDaClasse` — campos `campo1`, `campo2` — em `src/modulo/arquivo.py`
+- "nenhuma" se nada desta spec e usado por outra
+
+## Usa de outras specs
+<!-- So o nome + a spec de origem. Nunca repetir parametros aqui nem no resto da spec. -->
+- `nome_usado` ({spec de origem})
+- "nenhuma" se a spec nao usa nada de outra
 
 ## Criterios verificaveis
 - [ ] Comando ou acao que comprova que funciona (ex: `uv run pytest -v` passa)
@@ -224,7 +239,7 @@ Antes de confirmar com o usuário, calcule o **score de tamanho** da spec somand
 | Arquivo JavaScript não-trivial (>50 linhas esperadas) | +2 |
 | Arquivo JavaScript trivial (<50 linhas) | +1 |
 
-Guarde o score final (apos qualquer divisao decidida abaixo) — ele vai pro campo `**Score:**` do cabecalho da spec no PASSO 5, usado depois pelo `/implementar` pra decidir entre implementar inline ou delegar a um agente.
+Guarde o score final (apos qualquer divisao decidida abaixo) — ele vai pro campo `**Score:**` do cabecalho da spec no PASSO 5. O score serve pra manter a spec pequena o bastante pra uma implementacao de cada vez (o `/implementar` nao usa mais o score pra decidir nada).
 
 **Se o score for ≤ 5:** spec dentro do limite. Continue para o PASSO 4.
 
@@ -270,6 +285,47 @@ Nao altere o CLAUDE.md aqui — a spec apenas declara o impacto. A aplicacao aco
 
 ---
 
+## PASSO 3.82 — Nomes so do glossario
+
+Todo nome de dominio que a spec usa — entidade, campo, tabela, modulo, variavel de ambiente, componente das "Regras" — tem que estar em `.claude/specs/_dominio.md` ou nas "Interfaces públicas" de alguma spec.
+
+- **Nome que nao esta em lugar nenhum:** e nome novo. Pergunte ao usuario se e mesmo um conceito novo ou se ja existe com outro nome no glossario (sinonimo e a causa de "mesma coisa com nomes diferentes"). Se for novo, acrescente ao `_dominio.md` no mesmo passo em que gerar a spec, e diga isso no resumo do PASSO 4.
+- **Se `_dominio.md` nao existir:** liste os nomes novos no resumo do PASSO 4 e sugira rodar `/dominio` antes da proxima spec.
+- Termos tecnicos e nomes de biblioteca (`Session`, `smtplib`, `genai`) que a spec citar entram na linha "Termos técnicos aceitos" do `_dominio.md` (crie a linha se nao existir) — o conferidor do `/spec-review` so aceita nome que esteja no glossario. Palavras reservadas do Python e nomes privados (comecam com `_`) nao contam.
+
+O `/spec-review` confere isso por codigo (busca exata). Base: TraceDev (2026) — o agente que elimina inconsistencia de termos antes de gerar codigo se mostrou necessario no teste de remocao; teste de 06/10 neste fluxo: nome divergente pego 3 de 4 vezes so por essa checagem.
+
+---
+
+## PASSO 3.85 — Regras no molde QUANDO/DEVE
+
+Rascunhe a secao "Regras" a partir do "Comportamento" ja combinado e mostre ao usuario para revisar (a IA converte requisito curto para molde quase na qualidade humana, mas com revisao — Fuchss et al., RE'26).
+
+Formato obrigatorio, uma regra por linha:
+
+```
+- QUANDO {situacao}, o {componente} DEVE {acao}.
+```
+
+- **{componente}** e o nome do modulo como esta no glossario (`_dominio.md`) ou em "Modulos afetados": `watcher`, `email_sender`, `retry`, `repositorio`. E o que permite ao `/spec-review` juntar regras sobre a mesma peca vindas de specs diferentes.
+- **Uma situacao e uma acao por linha.** Duas coisas viram duas regras.
+- **Regra sobre componente de outra spec** e permitida como expectativa ("QUANDO todas as tentativas falham, o cliente_gemini DEVE devolver `None`, que o watcher repassa") — e exatamente onde contradicoes aparecem, e o conferidor compara.
+- **Nao substitui o "Comportamento".** O texto livre da contexto; as regras dao o que se confere. Somar os dois e o que melhora o codigo gerado; so o formato estruturado, sem o texto, ficou abaixo (Feng et al., FSE 2026). Molde inspirado no EARS (Mavin, Rolls-Royce), usado pelo Kiro (Amazon).
+
+---
+
+## PASSO 3.9 — Interfaces entre specs (definir uma vez so)
+
+Separe o que atravessa de uma spec para outra:
+
+1. **O que esta spec cria e outra spec vai usar** → secao "Interfaces públicas", com a assinatura completa (parametros e retorno; para classe/dataclass, os campos) e o arquivo onde mora ("— em `src/.../arquivo.py`"). O arquivo vai junto porque a linha e copiada inteira para a spec de quem usa: sem ele, quem escreve teste ou implementa tem que adivinhar de onde importar (aconteceu na 1a rodada real, 07/10). Funcao interna que ninguem de fora usa NAO entra — so o necessario (spec inchada derruba o desempenho do agente: -27 pontos no estudo "Constraint Decay", 2026).
+2. **O que esta spec usa de outra** → secao "Usa de outras specs", **so o nome + a spec de origem**. Em nenhum lugar da spec repita os parametros de algo que pertence a outra spec — nem em "Comportamento", nem em "Decisoes tomadas".
+3. **Confira cada item de "Usa"**: abra a spec de origem e veja se o nome esta nas "Interfaces públicas" dela. Se nao estiver (spec antiga, sem essa secao, ou nome diferente), pergunte ao usuario antes de seguir: o nome certo e outro, ou a spec de origem precisa publicar essa interface?
+
+Base: GitHub Spec Kit guarda contratos e modelo de dados em arquivos proprios, sem repetir em cada spec; o Tessl tem secao "API" na spec que cria; o `/contrato` deste fluxo ja faz o mesmo com o `openapi.yaml`.
+
+---
+
 ## PASSO 4 — Confirmar antes de gerar
 
 Antes de gerar o arquivo, apresente um resumo curto no chat:
@@ -281,6 +337,9 @@ Modifica: {lista de modulos}
 Nao mexe em: {lista}
 Criterios: {quantidade} verificaveis
 Impacto no CLAUDE.md: {secoes que ficarao desatualizadas ou "nenhum"}
+Nomes novos no glossario: {lista ou "nenhum"}
+Publica para outras specs: {nomes ou "nada"}
+Usa de outras specs: {nome (spec) ou "nada"}
 
 Posso gerar o arquivo?
 ```

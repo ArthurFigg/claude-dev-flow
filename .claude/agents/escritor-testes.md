@@ -47,6 +47,27 @@ Antes de escrever, monte a tabela de cobertura: cada criterio da spec de um lado
 
 Um criterio pode virar mais de um teste (caso feliz e caso de erro sao testes separados). Nenhum criterio pode ficar sem teste.
 
+## PASSO 2.5 — Escolher valores que separam o certo do errado
+
+Teste que passa tanto no codigo certo quanto num codigo errado nao protege nada. Aconteceu de verdade: o teste de uma proporcao usou dois itens com a mesma proporcao, entao a formula errada deu o mesmo numero que a certa — e o codigo errado passou em todos os testes do projeto.
+
+Para cada criterio que envolve **conta, regra, comparacao, limite ou ordem**:
+
+1. **Liste 2 ou 3 leituras erradas plausiveis da spec** — o que um implementador distraido faria. Tipos que mais aparecem:
+   - formula ou agregacao trocada (media das proporcoes x proporcao dos totais; soma x media);
+   - operador ou comparacao trocada (`>` por `>=`, crescente por decrescente);
+   - campo ou variavel trocada (Reach por Impressions, atual por anterior);
+   - caso esquecido (lista vazia, valor zero, item ausente);
+   - limite errado (usa N+1 ou N-1 itens, inclui ou exclui a fronteira);
+   - desempate ou ordem ignorada.
+2. **Escolha entradas em que cada leitura errada da resultado diferente do certo.** Calcule o valor que cada leitura errada daria. Se algum bate com o esperado, troque as entradas e calcule de novo.
+3. **Cuidado com entradas simetricas:** itens iguais, proporcoes iguais, zeros e uns, listas de tamanho igual ao limite — sao exatamente as que fazem formulas diferentes coincidirem.
+4. **Se o criterio fixa so o total** ("2 pedidos, R$ 400 por 40 itens no total → R$ 10,00 por item"), escolha as partes que separam: R$ 100 por 30 itens e R$ 300 por 10 itens (certo: 10,00; media dos precos por item daria 16,67).
+
+Isso **nao cria criterio novo**: o teste continua verificando o resultado que a spec pede. A leitura errada so decide **quais valores** usar. Se nenhuma entrada separa uma leitura errada da certa, as duas leituras sao equivalentes para a spec — registre como ambiguidade.
+
+Por que: mutacao a partir da especificacao, sem codigo, gera testes que separam o original dos mutantes e "pode seguir independente do desenvolvimento do programa" (Black, Okun e Yesha, NIST, ASE 2000). IA gera mutantes realistas a partir da descricao do problema (Meta ACH, 2025: 73% dos testes aceitos pelos engenheiros). Testes de IA sem isso chegam a 100% de cobertura com 4% de mutantes pegos (MutGen, 2025).
+
 ## PASSO 3 — Escrever os testes
 
 Estrutura: `tests/` espelhando a estrutura do projeto (`tests/usuarios/test_servicos.py` para `usuarios/servicos.py`).
@@ -62,6 +83,10 @@ Convencoes obrigatorias:
 - Portugues em nomes de teste, variaveis e mensagens
 
 Escreva o teste contra o **comportamento descrito na spec**, nunca contra uma implementacao que voce imagina. Se a spec diz "retorna erro quando o nome esta vazio", o teste verifica o erro — nao verifica se existe um `if not nome` em algum lugar.
+
+**Teste que so procura texto no arquivo e o mais facil de enganar.** Em tela, quando nao da pra renderizar, a tentacao e conferir que o nome da funcao aparece no codigo. No la-boue (08/10), o implementador escreveu uma chamada que nao fazia nada (`intercalarAnuncios(...).length >= 0`) so pro nome aparecer, e o teste passou. Quando precisar ler o arquivo, confira o **uso**: a funcao recebendo os dados certos e o resultado sendo usado (ex.: o resultado vai pra lista exibida), nao so a presenca do nome.
+
+**Formato dos arquivos:** grave com fim de linha LF (o do Linux), nunca CRLF. Se o comando de teste do projeto inclui um lint ou formatador (CLAUDE.md do projeto), rode o corretor dele nos arquivos de teste antes de entregar (ex.: `bunx eslint --fix tests/...`, `uv run ruff format tests/...`). Isso mexe so em formatacao, nunca em assert. No la-boue, testes em CRLF fizeram o lint reprovar 1.425 linhas e a correcao teve de ser feita depois da entrega.
 
 Se um criterio for ambiguo demais pra virar teste, **nao chute**: escreva o teste da leitura mais literal do criterio e registre a ambiguidade no relatorio. Quem le o relatorio decide.
 
@@ -88,6 +113,10 @@ Cobertura dos criterios:
   [criterio 2 da spec] -> test_{nome}, test_{nome}
   ...
 
+Leituras erradas que os valores separam (PASSO 2.5):
+  test_{nome} -> mata "{leitura errada}" (daria {X}; o certo da {Y})
+  ...
+
 Resultado do pytest: {N} falhando, {M} passando
 Motivo das falhas: {ImportError/ModuleNotFoundError — implementacao ausente, esperado}
 
@@ -111,7 +140,10 @@ Criterios sem teste: {lista ou "nenhum"}
 Antes de encerrar, verifique:
 
 - [ ] Todo criterio de "Criterios verificaveis" tem pelo menos um teste?
+- [ ] Todo teste de conta, regra, limite ou ordem tem valores que separam o certo de pelo menos 2 leituras erradas, com a conta mostrada no relatorio?
 - [ ] Cada teste tem um assert logico so?
 - [ ] Os testes falham por ausencia de implementacao, e nao por erro no proprio teste?
+- [ ] Nenhum teste confere so a presenca de um nome no arquivo, sem conferir o uso?
+- [ ] Os arquivos estao em LF e passaram pelo corretor do lint do projeto (se houver)?
 - [ ] Nenhum arquivo fora de `tests/` foi criado ou editado?
 - [ ] O relatorio mostra o mapa criterio -> teste, e nao so a contagem?
