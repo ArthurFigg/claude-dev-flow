@@ -233,9 +233,9 @@ A lista e curta e aponta o problema, nao a solucao. Depois de cada volta, repita
 | Cota do Gemini OK | `--model gemini-3.8-flash-medium` (normal) |
 | Cota do Gemini acabou | **Pare e pergunte:** esperar a cota voltar ou usar o agente `implementador-spec` (gasta a cota do Claude). Nunca decida sozinho |
 
-Sem degrau no Sonnet/Opus do `agy` (decisao do usuario, 11/10): a cota deles no Google e pequena (o Opus bateu o teto semanal em ~6 leituras, 10/10) e falharia justo quando precisasse.
+Sem degrau no Sonnet/Opus do `agy` (escolha do autor): a cota deles no Google e pequena (o Opus bateu o teto semanal em ~6 leituras, 10/10) e falharia justo quando precisasse.
 
-A primeira vez que uma cota esgotar, anote a mensagem exata que o `agy` devolveu no plano do fluxo multi-IA, pra deixar a deteccao precisa.
+A primeira vez que uma cota esgotar, anote a mensagem exata que o `agy` devolveu, pra deixar a deteccao precisa.
 
 Se usar o `implementador-spec`, passe o caminho da spec, o diretorio do projeto e os arquivos de teste, exiba o relatorio dele integralmente e faca o PASSO 5 do mesmo jeito.
 

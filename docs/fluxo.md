@@ -6,6 +6,8 @@
 
 Este é o fluxo padrão para todo projeto Python novo. Cada etapa tem uma skill específica. Seguir a ordem evita retrabalho.
 
+O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os testes e confere o resultado. O **Gemini**, chamado pelo `agy` (Antigravity CLI), escreve o código e confere as specs, na cota dele. O motivo está na seção 3.9; as pesquisas e os testes de cada peça, em [`provas.md`](provas.md). Sem o `agy`, use `variantes/so-claude/`.
+
 ---
 
 ### Etapa 1 — Criar o CLAUDE.md do projeto
@@ -91,10 +93,15 @@ A implementação é **code-first com FastAPI** (idiomático em Python): os mode
 **O que a spec contém:**
 - O que a feature faz (uma frase)
 - Comportamentos específicos (quando X acontece, Y deve ocorrer)
+- **Regras**, uma por linha, no formato "QUANDO {situação}, o {componente} DEVE {ação}" — somadas ao comportamento, não no lugar dele
+- **Interfaces públicas**: só o que outras specs vão usar desta, com a assinatura exata, escrita uma vez só aqui
+- **Usa de outras specs**: só o nome e a spec de origem, nunca a assinatura repetida
 - Critérios verificáveis por comando (`pytest`, `curl`, execução direta)
 - Módulos afetados e o que muda em cada um
 - O que NÃO mexer
 - Decisões tomadas durante a conversa
+
+**Por que interfaces escritas uma vez só:** quando a mesma assinatura aparece em duas specs, uma delas fica velha na primeira mudança. Num teste com 12 erros escondidos entre 4 specs, o formato antigo deixava passar 70%; com as três seções novas, o `/spec-review` pegou 11 de 12.
 
 Repita esta etapa para cada feature antes de implementar qualquer uma.
 
@@ -107,14 +114,17 @@ Repita esta etapa para cada feature antes de implementar qualquer uma.
 **O que faz:**
 - Lista as specs em `.claude/specs/` e separa em dois grupos pelo campo `**Revisão:**`: `aprovada` (já verificada numa chamada anterior, sem mudança desde então) e `pendente` (nova ou reaberta via `/reabrir-spec`)
 - Se não há nenhuma spec pendente, encerra avisando — não repete verificação nem relatório de specs já aprovadas
-- Dispara um subagente `verificador-spec` **só para cada spec pendente, em paralelo** — nunca para as já aprovadas. Cada instância lê a spec pendente dela, cruza com o CLAUDE.md, e compara contra **todas** as specs aprovadas mais as pendentes que vêm depois dela na lista (assim nenhum par é verificado duas vezes por duas instâncias diferentes)
-- Consolida os relatórios recebidos de todas as instâncias
+- Manda o **Gemini** conferir **só cada spec pendente, em paralelo** — nunca as já aprovadas — com o mesmo texto do agente `verificador-spec`. Cada conferência lê a spec pendente, cruza com o CLAUDE.md e compara contra **todas** as specs aprovadas mais as pendentes que vêm depois dela na lista (assim nenhum par é verificado duas vezes). Se a chamada do Gemini falhar ou a cota acabar, aquela spec cai no subagente `verificador-spec` (Claude)
+- Enquanto isso, um **script** (`conferir_specs.py`) acha por busca exata, sem IA: spec que contradiz a própria interface, uso de algo que a spec de origem não publica, assinatura repetida e nome fora do glossário. Ele também separa os pares de regras "QUANDO…, o X DEVE…" sobre o mesmo componente em specs diferentes, e o **Claude** julga cada par: existe um caso que cai nas duas regras e as ações se chocam?
+- Consolida os relatórios do Gemini, do script e dos pares
 - Corrige automaticamente inconsistências resolúveis (nomenclatura divergente, referências cruzadas faltando)
 - Para conflitos reais que exigem decisão: reporta e pergunta
 - Mapeia dependências combinando o que os subagentes detectaram agora com o campo `Depende de` já registrado nas specs aprovadas
 - Propõe ordem de implementação com justificativa arquitetural
 
-**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código. Verificar em paralelo evita carregar o texto de todas as specs na conversa principal — só os relatórios resumidos voltam para quem chamou. E não reverificar specs já aprovadas importa de verdade em fluxo incremental: cada subagente paga um custo fixo de inicialização (não reaproveita cache entre chamadas), então revisar uma spec de cada vez sem essa otimização significa pagar esse custo de novo, para as mesmas specs já confirmadas, a cada nova spec criada.
+**Por que é importante:** specs geradas em chamadas separadas não se conhecem. Esta etapa garante que o conjunto é coeso antes de escrever código. Verificar em paralelo evita carregar o texto de todas as specs na conversa principal — só os relatórios resumidos voltam para quem chamou.
+
+**Por que o Gemini confere e não o Claude:** quem escreveu as specs foi o Claude, e um modelo tende a aprovar o próprio texto. Num teste com erros escondidos, o Gemini achou 22 de 24 e o Claude 12 de 12 — mas o Claude gastava cerca de 59 mil tokens por spec. A troca aceita é cerca de 1 erro em 12 pela economia; o script e os pares julgados pelo Claude seguram parte do resto. E não reverificar specs já aprovadas importa de verdade em fluxo incremental: cada subagente paga um custo fixo de inicialização (não reaproveita cache entre chamadas), então revisar uma spec de cada vez sem essa otimização significa pagar esse custo de novo, para as mesmas specs já confirmadas, a cada nova spec criada.
 
 **Camada de gate opcional:** se o hook `check-spec-revisao.ps1` estiver ativo no projeto (ver seção 3.8), enquanto qualquer spec estiver com `Revisão: pendente`, o Claude Code recusa tecnicamente qualquer edição de código fora de `.claude/specs/` e do CLAUDE.md — não depende mais só da IA lembrar de checar o campo por instrução.
 
@@ -126,10 +136,18 @@ Para cada spec, na ordem recomendada pelo spec-review:
 
 **a)** Rode: `/implementar {nome_da_spec}`
 
-A skill roda em duas etapas, com atores diferentes:
+A skill passa por atores diferentes, nesta ordem:
 
-1. **Testes primeiro.** O subagente `escritor-testes` (Sonnet) lê só a spec e as convenções — nunca o código, que ainda não existe — e escreve os testes a partir da seção "Critérios verificáveis". Devolve o mapa de qual critério virou qual teste. Roda sempre, independente do score.
-2. **Código depois.** A skill lê o `**Score:**` da spec e decide: pequena (≤ 5) implementa inline; grande (≥ 6) delega ao subagente `implementador-spec` (Sonnet), que implementa isolado e devolve só o relatório — sem carregar todo o código escrito na conversa principal. Nos dois casos a implementação **não pode tocar em `tests/`**, e no fim a skill confere isso com `git diff --stat -- tests/`.
+1. **Spec expandida.** Se a spec usa algo de outras, um script junta a spec com só as interfaces que ela usa, copiadas das specs de origem. Quem escreve teste e quem implementa recebem tudo de que precisam, sem a spec inchar.
+2. **Testes primeiro.** O subagente `escritor-testes` lê só a spec e as convenções — nunca o código, que ainda não existe — e escreve os testes a partir dos "Critérios verificáveis". Para cada conta ou regra, escolhe valores em que uma leitura errada da spec daria resultado diferente do certo. Devolve o mapa de qual critério virou qual teste.
+3. **Foto dos testes.** A skill guarda uma impressão digital (hash) de cada arquivo de teste.
+4. **Código pelo Gemini.** O `agy` chama o Gemini com a spec, os testes (só leitura) e as regras do `GEMINI.md`. As permissões do `agy` negam escrever em `tests/`, rodar `git` e instalar dependência. Se travar, o Gemini responde `PRECISO DE AJUDA` em vez de forçar.
+5. **Conferência do Claude, em 3 camadas.** O hash dos testes bate? Os testes passam rodados pelo Claude (não pelo relato do Gemini)? E a leitura do código contra a spec, procurando atalho para o teste passar, comportamento da spec que nenhum teste cobre e erro sutil de lógica.
+6. **Testar os testes.** O Gemini propõe 5 erros pequenos no código; um script aplica cada um, roda os testes e desfaz. Erro que sobrevive vira aviso: os testes não protegem aquele ponto.
+7. **Correção, no máximo 2 voltas.** Cada volta é uma conversa nova com o Gemini, com a lista curta do que está errado. Depois da segunda sem resolver, a skill para e chama você.
+8. **Relatório "cumpre a spec?"** em `.claude/specs/_relatorios/{nome}.md`: veredito, critério → evidência, a saída real do pytest, arquivos → critério, decisões que a spec não cobria, riscos e o resultado do passo 6. É isso que você aprova.
+
+Se a cota do Gemini acabar, a skill para e pergunta: esperar ou usar o subagente `implementador-spec` (Claude), que gasta a cota do Claude. Nunca decide sozinha.
 
 **Por que os dois papéis são separados:** quando a mesma passada escreve o código e o teste, o teste confirma o código, não a spec. Se um critério foi entendido errado, ele é entendido errado nos dois lugares, o `pytest` fica verde e o gate do `/spec-close` não detecta nada — o teste passa a provar apenas que o código concorda consigo mesmo. Escrever o teste antes, a partir da spec, e proibir a implementação de editá-lo é o que devolve sentido ao gate.
 
@@ -141,7 +159,9 @@ Se um teste parecer errado durante a implementação, ele **não é consertado**
 - Lê a spec para extrair o título
 - Roda: `uv run pytest -v`
 - Se testes **passam**:
-  - Revisa o `git diff` da spec contra quatro critérios (correção, segurança, escopo, convenção) que o pytest não pega — inline, se a implementação foi feita nesta mesma sessão, ou via subagente `revisor-codigo` (só leitura), se a sessão foi retomada (ex: caso de borda que a spec exige mas nenhum teste cobre, segredo hardcoded)
+  - Lê o relatório "cumpre a spec?" do `/implementar`. Se o veredito não for `CUMPRE`, ou se o total de testes de agora não bater com o do relatório, para e pergunta: você aprovou outra coisa
+  - Confere se algum arquivo da lista "Não mexer" foi alterado
+  - Chama o subagente `revisor-codigo` (só leitura) quando ninguém leu o código nesta sessão, para revisar o diff contra quatro critérios que o pytest não pega: correção, segurança, escopo e convenção (ex: caso de borda que a spec exige mas nenhum teste cobre, segredo escrito no código)
   - Sincroniza o CLAUDE.md do projeto quando a spec declarou impacto (seção "Impacto no CLAUDE.md"), no mesmo commit
   - Se o revisor achar algo: mostra o achado e pergunta se você quer corrigir antes ou commitar mesmo assim — a decisão final é sua, o agente nunca corrige nem decide sozinho
   - Marca a spec como concluída no arquivo (adiciona data)
@@ -282,10 +302,10 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
 | `/contrato` | (Projeto web) Define recursos, endpoints e convenções da API; gera `openapi.yaml` (OpenAPI 3.1) |
 | `/spec` | Cria a spec de uma feature |
-| `/spec-review` | Revisa o conjunto de specs em paralelo (subagente `verificador-spec`), define ordem |
+| `/spec-review` | Gemini confere cada spec pendente em paralelo, script acha conflitos, Claude julga pares de regras; define ordem |
 | `/planejar-setup` | Decide versão do Python, deps e estrutura de pastas; documenta no CLAUDE.md |
-| `/implementar [nome]` | Testes primeiro (subagente `escritor-testes`), depois o código: inline se a spec for pequena, via subagente `implementador-spec` se for grande |
-| `/spec-close [nome]` | Fecha uma spec: pytest + revisão do diff + commit |
+| `/implementar [nome]` | Testes primeiro (subagente `escritor-testes`), Gemini escreve o código, Claude confere, testa os testes, grava o relatório |
+| `/spec-close [nome]` | Fecha uma spec: pytest + relatório + "Não mexer" + revisão do diff + commit |
 | `/reabrir-spec [nome]` | Reabre uma spec concluída para nova revisão |
 | `/encerrar-projeto` | Encerramento formal: pytest + README + CHANGELOG + commit + tag |
 | `/session-start` | Briefing de retomada de sessão |
@@ -293,7 +313,7 @@ Durante a implementação de specs, use sempre `/spec-close`.
 | `/readme` | Gera o README.md quando o projeto estiver pronto |
 | `/diagrama` | Desenha arquitetura e modelo de dados em Mermaid, numa região marcada do README |
 
-Os subagentes `revisor-codigo` e `verificador-spec` e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README para ativação — e reforçam automaticamente etapas que as skills acima já cobrem por instrução. O `escritor-testes` é diferente: sem ele o `/implementar` não tem testes prontos para a implementação fazer passar, e a separação entre quem escreve o teste e quem escreve o código deixa de existir.
+O subagente `revisor-codigo` e o hook de gate (`check-spec-revisao.ps1`) são opcionais — ver seção "Como usar" no README — e reforçam etapas que as skills já cobrem por instrução. O `verificador-spec` e o `implementador-spec` são a reserva do Gemini: sem eles, quando a cota do `agy` acaba, a etapa para. O `escritor-testes` é diferente: sem ele o `/implementar` não tem testes prontos para a implementação fazer passar, e a separação entre quem escreve o teste e quem escreve o código deixa de existir.
 
 ---
 
@@ -415,13 +435,15 @@ Quando você digita `/spec`, o Claude Code lê o arquivo `~/.claude/skills/spec/
 
 ### 3.7 — O que a IA faz quando implementa uma spec
 
-Quando você roda `/implementar busca_monstro` (ou implementa a spec diretamente), a IA:
-1. Lê a spec completa
+Quando você roda `/implementar busca_monstro`, o Gemini (quem escreve o código):
+1. Lê a spec completa e os testes que o `escritor-testes` já escreveu
 2. Lê o CLAUDE.md do projeto para entender a arquitetura
-3. Lê o CLAUDE.md global para as convenções de código
+3. Lê o `GEMINI.md` global para as convenções de código e o que é proibido
 4. Cria ou modifica os arquivos listados em "Módulos afetados"
-5. Cria os testes correspondentes em `tests/`
+5. Roda os testes até passarem, sem poder alterá-los
 6. Não toca no que está em "Não mexer"
+
+Depois, o Claude confere tudo isso sem confiar no relato do Gemini: roda os testes ele mesmo e lê o código contra a spec.
 
 A IA não "entende" o código como um humano — ela prediz o próximo token (pedaço de texto) com base no contexto. Quanto mais contexto preciso (CLAUDE.md, spec), menos ela precisa adivinhar e mais o resultado se parece com o que você quer.
 
@@ -442,9 +464,9 @@ Até certo ponto, este fluxo dependia só de instrução em texto (a IA lê a re
 
 **Hook:** um script que o Claude Code executa automaticamente antes (ou depois) de uma ferramenta ser usada — por exemplo, antes de qualquer edição de arquivo. O hook deste fluxo (`check-spec-revisao.ps1`) roda antes de toda edição e verifica se existe alguma spec com `Revisão: pendente` no projeto atual. Se existir, a edição é recusada — não é um lembrete de texto que a IA pode ignorar por engano, é uma barreira técnica.
 
-**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa quatro: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `verificador-spec` (dentro do `/spec-review`, um por spec, todos rodando ao mesmo tempo, também só leitura), `escritor-testes` (dentro do `/implementar`, em Sonnet, escreve os testes da spec antes de existir código) e `implementador-spec` (dentro do `/implementar`, também em Sonnet, escreve o código de specs grandes isolado do contexto principal). Os dois primeiros só reportam e nunca decidem sozinhos; os dois últimos escrevem, mas devolvem o controle para o `/spec-close` fazer o gate de testes e commit.
+**Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa quatro: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `escritor-testes` (dentro do `/implementar`, escreve os testes da spec antes de existir código) e dois de reserva para quando a cota do Gemini acaba: `verificador-spec` (confere specs no `/spec-review`, só leitura) e `implementador-spec` (escreve o código no `/implementar`). Os de leitura só reportam e nunca decidem sozinhos; os que escrevem devolvem o controle para o `/spec-close` fazer o gate de testes e commit.
 
-O par `escritor-testes` + `implementador-spec` mostra um segundo uso do isolamento: não é só economia de contexto, é **separação de papéis**. O escritor não vê o código porque ele ainda não existe; o implementador não pode editar `tests/`. Nenhum dos dois consegue fechar o ciclo sozinho, e é justamente por isso que o `pytest` verde no fim significa alguma coisa. Um único agente fazendo os dois trabalhos produziria o mesmo resultado aparente — testes verdes — sem a mesma garantia.
+O par `escritor-testes` + quem implementa (o Gemini, ou o `implementador-spec` na reserva) mostra um segundo uso do isolamento: não é só economia de contexto, é **separação de papéis**. O escritor não vê o código porque ele ainda não existe; quem implementa não pode editar `tests/`. Nenhum dos dois consegue fechar o ciclo sozinho, e é justamente por isso que o `pytest` verde no fim significa alguma coisa. Um único agente fazendo os dois trabalhos produziria o mesmo resultado aparente — testes verdes — sem a mesma garantia.
 
 **Por que isso importa mais do que parece:** escopo restrito de ferramentas é uma garantia técnica, não uma promessa de comportamento. Um subagente sem acesso a `Edit` ou `Write` fisicamente não consegue alterar código, mesmo que "quisesse" — diferente de só instruir "não edite nada" num prompt, que depende da IA seguir a instrução.
 
@@ -456,3 +478,25 @@ O par `escritor-testes` + `implementador-spec` mostra um segundo uso do isolamen
 - "multi-agent systems software"
 
 **O que entender:** a diferença entre "pedir para a IA não fazer algo" (instrução, pode falhar) e "impedir tecnicamente que a IA faça algo" (permissão restrita, não falha). Hooks e escopo de ferramentas de subagente são a segunda categoria.
+
+---
+
+### 3.9 — Harness engineering: dois modelos, cada um no seu papel
+
+**Harness** é tudo o que fica em volta do modelo para ele entregar o que foi pedido: as regras (CLAUDE.md, GEMINI.md), as skills, os testes, as travas (hooks, permissões, hash dos testes) e as conferências. A ideia costuma ser resumida como "agente = modelo + harness". Este fluxo inteiro é um harness.
+
+O harness daqui usa dois modelos por dois motivos:
+
+**Economia.** Escrever código é a parte que mais gasta token. O Gemini escreve na cota dele; o Claude só lê e confere. O mesmo vale para conferir as specs: cerca de 59 mil tokens por spec que deixam de sair da cota do Claude.
+
+**Quem escreve não confere.** Um modelo tende a dar nota maior ao próprio texto e aos da mesma família. Por isso cada papel fica com um ator diferente: o Claude escreve a spec e os testes, o Gemini escreve o código, e o Claude confere um código que não foi ele quem escreveu. As permissões e o hash garantem que o Gemini não consiga mexer nos testes para fazê-los passar.
+
+Não há medição de que o Gemini programa melhor que o Claude. O ganho vem da separação. Os números de cada peça estão em [`provas.md`](provas.md).
+
+**Termos para pesquisar:**
+- "harness engineering AI agents"
+- "LLM-as-a-judge self-preference bias"
+- "reward hacking code generation" (quando o modelo engana o teste em vez de resolver)
+- "mutation testing" (testar os testes)
+
+**O que entender:** o modelo é uma peça. A confiabilidade vem do que está em volta: quem faz o quê, o que cada um pode tocar e quem confere quem.
