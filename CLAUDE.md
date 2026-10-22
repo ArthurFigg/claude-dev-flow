@@ -1,7 +1,7 @@
 # CLAUDE.md — Exemplo de Configuração Global
 
 > **ADAPTE ANTES DE USAR**
-> Este arquivo é o CLAUDE.md global do autor, construído e refinado ao longo de 5 projetos Python reais.
+> Este arquivo é o CLAUDE.md global do autor, construído e refinado ao longo de vários projetos Python reais.
 > Ele é intencionalmente opinionado — reflete escolhas específicas de stack, idioma e estilo.
 > Leia cada seção, entenda o motivo, e ajuste ao seu contexto antes de usar.
 >

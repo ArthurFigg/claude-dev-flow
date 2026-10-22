@@ -1,6 +1,6 @@
 # claude-dev-flow
 
-Um fluxo de desenvolvimento com Claude Code construído ao longo de 5 projetos Python reais.
+Um fluxo de desenvolvimento com Claude Code construído ao longo de vários projetos reais.
 
 Em termos de hoje, é um trabalho de *harness engineering*: tudo o que fica em volta do modelo (regras, specs, testes, travas, conferências) para que ele entregue o que foi pedido. O harness usa dois modelos: o **Claude** escreve as specs e os testes e confere o resultado; o **Gemini**, pelo `agy` (Antigravity CLI), escreve o código e confere as specs. Quem não tem o `agy` usa a variante só-Claude (ver `variantes/so-claude/`).
 
@@ -15,6 +15,37 @@ O problema não era a IA. Era ausência de contexto.
 A IA não sabia o que o projeto fazia, quais módulos existiam, o que podia ou não podia tocar, quais decisões já tinham sido tomadas. Cada conversa começava do zero.
 
 Este fluxo resolve isso: antes de qualquer código, o projeto tem um briefing (CLAUDE.md), as features têm especificações verificáveis (specs), e cada sessão começa com um resumo automático do estado atual. A IA passa a implementar o que foi decidido — não o que ela acha mais provável.
+
+---
+
+## Por que dois modelos: Claude + Gemini (agy)
+
+### Economia
+
+Escrever código é a parte que mais gasta token. No fluxo, quem escreve é o Gemini, pelo `agy`, que roda na cota dele. O Claude só lê o resultado e confere.
+
+O mesmo vale para a revisão das specs. Conferir uma spec com o Claude custava cerca de 59 mil tokens; com o Gemini, sai da cota do Claude. Num teste com erros escondidos de propósito em specs, o Gemini achou 22 de 24 e o Claude, 12 de 12. A troca aceita é perder cerca de 1 erro em 12 em troca da economia.
+
+### Código melhor, porque quem escreve não confere
+
+Um modelo tende a aprovar o próprio trabalho. Pesquisas mostram que modelos dão nota maior aos próprios textos e aos da mesma família ([Play Favorites, 2025](https://arxiv.org/abs/2508.06709)), e que, avaliando por uma lista de critérios, aprovam com mais facilidade um critério que falhou quando o texto é deles ([Self-Preference Bias in Rubric-Based Evaluation, 2026](https://arxiv.org/abs/2604.06996)).
+
+Por isso cada papel fica com um ator diferente:
+
+| Papel | Quem |
+|---|---|
+| Escrever a spec | Claude, com você |
+| Escrever os testes, antes do código | Claude (agente `escritor-testes`), lendo só a spec |
+| Escrever o código | Gemini, sem permissão para mexer em `tests/` |
+| Conferir o código contra a spec | Claude, que não escreveu aquele código |
+
+O que isso deu na prática:
+
+- Em 17 rodadas num projeto real, o Gemini nunca alterou um teste. A trava é dupla: permissão negada no `agy` e uma impressão digital (hash) dos testes conferida no fim.
+- A leitura do Claude pegou um atalho que os testes deixaram passar: código escrito só para o nome aparecer no arquivo.
+- Medido em 21/10/2026: com 9 erros escondidos que passam em todos os testes, a conferência do Claude achou 8.
+
+Ressalva: não há medição de que o Gemini escreve código melhor que o Claude. O ganho vem de separar quem escreve de quem confere. Sem o `agy`, a variante só-Claude mantém a separação entre teste e código, mas perde a separação entre famílias de modelo.
 
 ---
 
@@ -64,7 +95,7 @@ claude-dev-flow/
 
 ### 1. Adapte o CLAUDE.md global
 
-O `CLAUDE.md` na raiz deste repositório é o arquivo global do autor — opinionado e testado em 5 projetos Python. Leia o bloco de aviso no topo antes de usar.
+O `CLAUDE.md` na raiz deste repositório é o arquivo global do autor — opinionado e testado em vários projetos Python. Leia o bloco de aviso no topo antes de usar.
 
 Copie para `~/.claude/CLAUDE.md` (Windows: `C:\Users\<usuario>\.claude\CLAUDE.md`) após adaptar ao seu contexto.
 
@@ -158,9 +189,9 @@ Detalhes de cada etapa, incluindo o que a IA faz internamente e os conceitos por
 
 ---
 
-## Projetos onde este fluxo foi testado
+## Alguns projetos feitos com este fluxo
 
-Cada um desses projetos foi desenvolvido com uma versão deste fluxo, do CLAUDE.md inicial ao commit final:
+O fluxo já foi usado em muitos projetos. Estes são alguns exemplos, cada um feito do CLAUDE.md inicial ao commit final:
 
 | Projeto | O que faz |
 |---|---|
@@ -170,7 +201,7 @@ Cada um desses projetos foi desenvolvido com uma versão deste fluxo, do CLAUDE.
 | FormMaster | Plataforma web de formulários com triagem automática via IA |
 | hardware_monitor | Monitor de CPU/RAM/disco em tempo real com interface gráfica e notificações |
 
-O fluxo foi refinado a cada projeto. A versão aqui é o que ficou depois das 5 iterações.
+O fluxo foi refinado a cada projeto. A versão aqui é a mais recente.
 
 ---
 
