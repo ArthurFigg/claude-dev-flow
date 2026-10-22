@@ -2,6 +2,8 @@
 
 Um fluxo de desenvolvimento com Claude Code construído ao longo de 5 projetos Python reais.
 
+Em termos de hoje, é um trabalho de *harness engineering*: tudo o que fica em volta do modelo (regras, specs, testes, travas, conferências) para que ele entregue o que foi pedido. O harness usa dois modelos: o **Claude** escreve as specs e os testes e confere o resultado; o **Gemini**, pelo `agy` (Antigravity CLI), escreve o código e confere as specs. Quem não tem o `agy` usa a variante só-Claude (ver `variantes/so-claude/`).
+
 ---
 
 ## O problema que este fluxo resolve
@@ -29,9 +31,9 @@ claude-dev-flow/
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
       contrato/                # (projeto web) gera openapi.yaml (OpenAPI 3.1): recursos, endpoints, schemas
       spec/                    # especifica uma feature com critérios verificáveis
-      spec-review/             # revisa o conjunto de specs em paralelo, define ordem
+      spec-review/             # Gemini confere cada spec + script acha conflitos entre specs; define ordem
       planejar-setup/          # decide versão do Python, deps e estrutura de pastas
-      implementar/             # decide inline vs agente por score e implementa a spec
+      implementar/             # testes antes (escritor-testes), Gemini escreve o código, Claude confere, testa os testes
       spec-close/              # roda pytest + revisão de diff, marca concluída, commita
       reabrir-spec/            # reabre uma spec concluída para nova revisão
       encerrar-projeto/        # encerramento formal: pytest + README + CHANGELOG + tag
@@ -45,10 +47,15 @@ claude-dev-flow/
       escritor-testes.md        # subagente Sonnet: escreve os testes da spec antes de existir código
       revisor-codigo.md         # subagente read-only: audita o diff antes de cada commit
       verificador-spec.md       # subagente read-only: verifica specs em paralelo no spec-review
-      implementador-spec.md     # subagente Sonnet: implementa specs grandes isoladas do contexto principal
+      implementador-spec.md     # subagente: reserva do Gemini quando a cota do agy acaba
     hooks/
       check-spec-revisao.ps1    # bloqueia edição de código com spec "Revisão: pendente"
     settings.json.example       # como registrar o hook acima num projeto (copie e adapte)
+  gemini/
+    GEMINI.md                   # regras do Gemini como implementador (vai em ~/.gemini/)
+    settings.json.example       # permissões do agy: o que ele pode escrever e rodar
+  variantes/
+    so-claude/                  # implementar + spec-review sem o agy (versão de 27/09)
 ```
 
 ---
@@ -105,7 +112,17 @@ O hook (`.claude/hooks/check-spec-revisao.ps1`) bloqueia edição de código enq
 
 Sem essas duas coisas o fluxo funciona igual — elas são reforço automático dos gates que as skills já fazem sozinhas por instrução.
 
-### 4. Crie um CLAUDE.md para o seu projeto
+### 4. Instale o agy (Gemini)
+
+O `/implementar` e o `/spec-review` chamam o Gemini pelo `agy` (Antigravity CLI), fora da cota do Claude.
+
+1. Instale o `agy` e faça o login. As skills procuram em `~/AppData/Local/agy/bin/agy.exe` (Windows); em outro sistema, ajuste esse caminho nos dois `SKILL.md`.
+2. Copie `gemini/GEMINI.md` para `~/.gemini/GEMINI.md`. São as regras do implementador: não mexer em `tests/`, não rodar `git`, parar com `PRECISO DE AJUDA` quando travar.
+3. Copie `gemini/settings.json.example` para `~/.gemini/antigravity-cli/settings.json` e acrescente as pastas de código dos seus projetos em `allow`. No modo sem janela, o que não está liberado é negado e o Gemini para.
+
+Sem o `agy`, use `variantes/so-claude/` (veja o `LEIA-ME.md` de lá).
+
+### 5. Crie um CLAUDE.md para o seu projeto
 
 Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o que ele faz, a stack, os módulos previstos e as convenções específicas. Quanto mais preciso, menos a IA vai adivinhar.
 
@@ -119,9 +136,9 @@ Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o 
 3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)
    /contrato              → (só projeto web) define a superfície da API antes das specs de endpoint
 4. /spec                  → especifica cada feature (repetir para cada uma)
-5. /spec-review           → revisa o conjunto em paralelo (subagentes), detecta conflitos, define ordem
+5. /spec-review           → Gemini confere cada spec em paralelo, script acha conflitos, define ordem
 6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
-7. Para cada spec: /implementar (inline ou agente, por score) → /spec-close (pytest + revisão do diff → commita)
+7. Para cada spec: /implementar (testes → Gemini escreve → Claude confere → relatório) → /spec-close (pytest + relatório + diff → commita)
 8. /session-start         → no início de cada sessão subsequente
    /diagrama              → quando a arquitetura estabilizar, desenha o mapa no README
    /encerrar-projeto      → quando o projeto estiver pronto para release

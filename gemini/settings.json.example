@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "write_file(src/)",
+      "write_file(config.py)",
+      "write_file(.env.example)",
+      "command(regex:uv run pytest.*)",
+      "command(regex:uv run ruff.*)",
+      "command(ls)",
+      "command(cat)",
+      "command(dir)",
+      "command(type)",
+      "command(Get-ChildItem)",
+      "command(Get-Content)",
+      "read_url(*)"
+    ],
+    "deny": [
+      "write_file(tests/)",
+      "write_file(.claude/)",
+      "write_file(CLAUDE.md)",
+      "write_file(GEMINI.md)",
+      "write_file(AGENTS.md)",
+      "write_file(pyproject.toml)",
+      "write_file(.git/)",
+      "command(git)",
+      "command(uv add)",
+      "command(uv remove)",
+      "command(rm)",
+      "command(del)",
+      "command(rmdir)",
+      "command(Remove-Item)"
+    ]
+  }
+}

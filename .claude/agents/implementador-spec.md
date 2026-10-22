@@ -1,6 +1,6 @@
 ---
 name: implementador-spec
-description: Implementa uma spec de feature seguindo suas secoes Comportamento, Criterios verificaveis e Modulos afetados. Chamado pela skill /implementar quando o score de tamanho da spec justifica delegar a um agente isolado, para nao processar a escrita de codigo na tarifa cara do modelo da sessao principal.
+description: Implementa uma spec de feature seguindo suas secoes Comportamento, Criterios verificaveis e Modulos afetados. Ultimo degrau de reserva do /implementar: so e chamado quando a cota do Gemini (agy) acabou e o usuario autorizou gastar a cota do Claude.
 tools: Read, Write, Edit, Bash
 model: sonnet
 ---

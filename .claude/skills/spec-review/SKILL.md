@@ -16,7 +16,7 @@ Voce nao implementa nada. Voce nao modifica specs. Voce so le, analisa e reporta
 3. Inconsistencias resoluveis (nomenclatura, referencias cruzadas, formatacao) sao corrigidas diretamente nos arquivos de spec, sem perguntar.
 4. Nunca implementar codigo.
 5. A ordem proposta deve seguir dependencia arquitetural, nao ordem de criacao dos arquivos.
-6. A verificacao de cada spec contra o CLAUDE.md e contra as outras specs e feita por subagentes `verificador-spec` disparados em paralelo — nunca leia e compare as specs manualmente no lugar deles.
+6. A verificacao de cada spec contra o CLAUDE.md e contra as outras specs e feita pelo Gemini (via `agy`), uma chamada por spec em paralelo, com o texto do agente `verificador-spec` — nunca leia e compare as specs manualmente no lugar dele. O subagente `verificador-spec` (Claude) so entra como reserva, spec por spec, quando a chamada do Gemini falhar.
 
 # OBJETIVO
 
@@ -63,34 +63,76 @@ Disparando verificacao paralela so das pendentes...
 
 ---
 
-## PASSO 1.5 — Verificacao paralela (subagentes) — so das specs pendentes
+## PASSO 1.5 — Verificacao paralela (Gemini via agy) — so das specs pendentes
 
-Para cada spec do grupo "Pendente" (posicao i dentro do proprio grupo), chame o agente `verificador-spec` (via Agent tool), passando:
-- Caminho da spec pendente (a spec alvo)
-- Caminho do CLAUDE.md do projeto
-- Lista de comparacao: **todas** as specs do grupo "Aprovada" + as specs do grupo "Pendente" que vem depois dela na ordem alfabetica dentro do proprio grupo (evita comparar duas pendentes duas vezes; a comparacao contra aprovadas nunca duplica porque so as pendentes disparam agente)
+Anuncie:
+```
+Verificando pelo agy (Gemini 3.1 Pro), fora da cota do Claude. Leva de 3 a 8 minutos.
+```
 
-**Nunca dispare o agente para uma spec do grupo "Aprovada"** — ela ja foi verificada numa chamada anterior e nao mudou desde entao. Uma spec aprovada so volta a disparar agente se o usuario pedir explicitamente pra reverificar ela especificamente, ou se `/reabrir-spec` marcou o campo de volta pra `pendente`.
+Rode na raiz do projeto, com `run_in_background` (o Gemini leva de 157 a 450 s por spec; o script dispara todas em paralelo e espera):
 
-**Dispare todas as chamadas do grupo pendente na mesma mensagem** — nao uma por vez, nao aguarde uma terminar para disparar a proxima.
+```bash
+bash ~/.claude/skills/spec-review/verificar_gemini.sh "$TMP/spec-review" ".claude/specs/a.md .claude/specs/b.md" .claude/specs/c.md .claude/specs/d.md
+```
 
-Se so houver 1 spec pendente, ainda chame 1 subagente (lista de "pendentes depois" vazia, mas comparando contra todas as aprovadas).
+- 1o argumento: pasta de saida (temporaria, fora do projeto). Cada spec gera `{nome}.txt` com o relatorio.
+- 2o argumento: **todas** as specs do grupo "Aprovada", entre aspas numa string so (`""` se nenhuma). Sem `_dominio.md`.
+- Depois: as specs do grupo "Pendente", na ordem alfabetica. O script compara cada uma contra todas as aprovadas + as pendentes que vem depois dela (evita comparar duas pendentes duas vezes; a comparacao contra aprovadas nunca duplica porque so as pendentes sao verificadas).
 
-Aguarde todas as respostas antes de continuar para o PASSO 2.
+O texto do pedido sai do corpo de `~/.claude/agents/verificador-spec.md` — mudar o verificador e mudar esse arquivo. O script usa `--mode plan` (Gemini sem terminal): sem ele, 6 de 15 rodadas travaram esperando permissao; com ele, 0 de 15.
+
+Por que Gemini e nao o subagente: num teste com erros plantados, o Gemini pegou 22/24 erros plantados em 2 rodadas e 0 alarmes falsos nas specs limpas; o Claude pegou 12/12, mas gasta ~59 mil tokens por spec. Escolha do autor: troca ~1 erro em 12 pela economia. Outra familia conferindo o que o Claude escreveu tambem e o principio do fluxo.
+
+**Nunca verifique uma spec do grupo "Aprovada"** — ela ja foi verificada numa chamada anterior e nao mudou desde entao. Uma spec aprovada so volta a ser verificada se o usuario pedir explicitamente pra reverificar ela especificamente, ou se `/reabrir-spec` marcou o campo de volta pra `pendente`.
+
+Quando o script terminar, leia cada `{nome}.txt`. **Reserva, spec por spec:** se a saida for diferente de 0, o arquivo nao tiver a linha `SPEC:` ou falar em cota/limite, chame o agente `verificador-spec` (Agent tool) so para aquela spec, com a mesma lista de comparacao, e avise no relatorio final qual spec caiu na reserva e a mensagem do `agy` (pra deixar a deteccao de cota precisa).
+
+| Problema | O que fazer |
+|---|---|
+| O proprio Claude Code nega rodar o script ou o `agy` | Pare e diga ao usuario para adicionar, em `/permissions` > Allow, a regra `Bash(bash ~/.claude/skills/spec-review/verificar_gemini.sh:*)` (User settings) |
+
+Aguarde todos os relatorios antes de continuar para o PASSO 1.6.
 
 ---
 
-## PASSO 2 — Consolidar relatorios dos subagentes
+## PASSO 1.6 — Conferidor do formato novo (codigo)
 
-Junte as respostas estruturadas recebidas de cada instancia do `verificador-spec` em tres listas:
+Rode, na raiz do projeto, enquanto o Gemini trabalha (sao independentes):
+
+```bash
+uv run --no-project python ~/.claude/skills/spec-review/conferir_specs.py .claude/specs
+```
+
+O script so olha specs no formato novo (com "Interfaces públicas" ou "Regras"); as antigas ficam so com o verificador do PASSO 1.5. Ele devolve:
+
+- `codigo` — achados por busca exata, sem IA:
+  - **C0** a spec contradiz a propria interface publica
+  - **C1** "Usa de outras specs" cita algo que a spec de origem nao publica
+  - **C2** uma spec repete a assinatura de algo que outra publica
+  - **C3** nome fora do glossario e das interfaces publicas
+- `pares_de_regras` — pares de regras "QUANDO..., o <componente> DEVE..." sobre o mesmo componente, em specs diferentes. **Voce** julga cada par no PASSO 2.
+
+Por que existe: o codigo acha o que comparar, e o julgamento fica com pedacos pequenos (ALICE, TU Berlin 2024, e "Global Consistency Checking", 2026).
+
+---
+
+## PASSO 2 — Consolidar os relatorios do verificador
+
+Junte os relatorios do PASSO 1.5 (Gemini, ou o subagente de reserva) em tres listas:
 
 - **Correcoes automaticas**: uniao das linhas de "CLAUDE.md - corrigivel automaticamente" de todos os relatorios
 - **Conflitos criticos**: uniao das linhas de "CLAUDE.md - conflito critico" e "CONFLITOS COM OUTRAS SPECS" de todos os relatorios
 - **Dependencias**: uniao das linhas de "DEPENDENCIAS DETECTADAS" de todos os relatorios
 
-Como o PASSO 1.5 ja garante que cada par envolvendo ao menos uma spec pendente foi verificado por exatamente uma instancia, nao ha necessidade de deduplicar — so agregar as listas. Pares entre duas specs ja aprovadas nao aparecem aqui porque foram resolvidos em chamadas anteriores.
+Some os achados do conferidor (PASSO 1.6):
+- **C2** (assinatura repetida) e **C3** com grafia obviamente errada de um nome do glossario (ex.: `EMAIL_DESTINO` x `EMAIL_DESTINATARIO`) → **Correcoes automaticas**: troque a assinatura repetida pela referencia ("usa `nome` (spec)") e o nome errado pelo do glossario.
+- **C0**, **C1**, **C3** de nome realmente novo → **Conflitos criticos** (decisao do usuario: qual das duas specs esta certa, ou se o nome entra no glossario).
+- **Pares de regras:** para cada par, pergunte-se: existe um caso real que cai nas duas situacoes — mesmo descritas com palavras diferentes, ou uma mais ampla que a outra — e nele as acoes, numeros, codigos ou limites se chocam? Limites diferentes para a mesma coisa (30 s x 60 s, "mais de 20" x "a partir de 20") contam como conflito. Se sim → **Conflitos criticos**, com as duas frases lado a lado.
 
-Se algum relatorio vier vazio ou fora do formato esperado, trate como "nenhum achado" para aquela spec e continue com os demais — nao pare a consolidacao por causa de uma instancia com problema.
+Como o PASSO 1.5 ja garante que cada par envolvendo ao menos uma spec pendente foi verificado por exatamente uma chamada, nao ha necessidade de deduplicar — so agregar as listas. Pares entre duas specs ja aprovadas nao aparecem aqui porque foram resolvidos em chamadas anteriores.
+
+Relatorio vazio ou fora do formato ja caiu na reserva do PASSO 1.5. Se nem a reserva devolver o formato, trate como "nenhum achado" para aquela spec, avise no relatorio final e continue com as demais.
 
 ---
 
@@ -127,8 +169,8 @@ Se nao houver conflitos criticos, passe direto para o PASSO 3.
 
 Combine duas fontes, sem reanalisar nenhuma spec do zero:
 
-1. **Dependencias novas** — a lista consolidada no PASSO 2, vinda dos subagentes desta chamada (envolvendo as specs pendentes).
-2. **Dependencias ja registradas** — leia o campo `**Depende de:**` de cada spec do grupo "Aprovada" diretamente (Grep pontual do campo, sem reabrir agente) — foram determinadas em chamadas anteriores e continuam validas enquanto a spec nao for reaberta.
+1. **Dependencias novas** — a lista consolidada no PASSO 2, vinda do verificador desta chamada (envolvendo as specs pendentes).
+2. **Dependencias ja registradas** — leia o campo `**Depende de:**` de cada spec do grupo "Aprovada" diretamente (Grep pontual do campo, sem verificar de novo) — foram determinadas em chamadas anteriores e continuam validas enquanto a spec nao for reaberta.
 
 Monte o mapa final combinando as duas fontes, incluindo como independente qualquer spec que nao apareceu nem como origem nem como destino em nenhuma dependencia (nova ou ja registrada).
 
@@ -201,16 +243,18 @@ Nenhum conflito critico. Pode implementar seguindo a ordem acima.
 - Nunca propor ordem sem justificativa arquitetural explicita
 - Nunca fazer mais de uma pergunta por mensagem
 - Nunca tratar inconsistencias resoluveis como conflitos criticos — corrigir e seguir
-- Nunca disparar o agente `verificador-spec` para uma spec ja marcada `aprovada` — so specs `pendente` (novas ou reabertas) disparam verificacao, a menos que o usuario peca explicitamente para reverificar uma spec especifica
+- Nunca verificar (Gemini ou reserva) uma spec ja marcada `aprovada` — so specs `pendente` (novas ou reabertas) disparam verificacao, a menos que o usuario peca explicitamente para reverificar uma spec especifica
+- Nunca usar `--dangerously-skip-permissions` no `agy`
 
 # CRITERIO DE QUALIDADE
 
 Antes de encerrar, verifique:
 
 - [ ] Todas as specs em `.claude/specs/` foram listadas e separadas em aprovada/pendente?
-- [ ] Se nao havia spec pendente, a skill encerrou informando isso, sem disparar agente e sem repetir relatorio antigo?
-- [ ] Um subagente `verificador-spec` foi disparado so para as specs pendentes (nunca para as ja aprovadas), todos na mesma mensagem (em paralelo)?
-- [ ] Cada agente de spec pendente comparou contra todas as aprovadas, alem das pendentes seguintes na ordem alfabetica?
+- [ ] Se nao havia spec pendente, a skill encerrou informando isso, sem verificar nada e sem repetir relatorio antigo?
+- [ ] O `verificar_gemini.sh` rodou so com as specs pendentes (nunca as ja aprovadas), todas numa chamada so?
+- [ ] Cada spec pendente comparou contra todas as aprovadas, alem das pendentes seguintes na ordem alfabetica?
+- [ ] Spec com saida falha do Gemini caiu na reserva (`verificador-spec`) e isso foi avisado?
 - [ ] Todos os relatorios foram recebidos e consolidados antes de aplicar qualquer correcao (PASSO 2)?
 - [ ] Inconsistencias resoluveis foram corrigidas diretamente nos arquivos?
 - [ ] As correcoes aplicadas foram listadas com antes/depois quando relevante?
