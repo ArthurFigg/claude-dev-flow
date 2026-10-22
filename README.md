@@ -45,6 +45,8 @@ O que isso deu na prática:
 - A leitura do Claude pegou um atalho que os testes deixaram passar: código escrito só para o nome aparecer no arquivo.
 - Medido em 21/10/2026: com 9 erros escondidos que passam em todos os testes, a conferência do Claude achou 8.
 
+As pesquisas e os testes de cada peça importante do fluxo estão em [`docs/provas.md`](docs/provas.md) (versão para baixar: [`docs/provas.pdf`](docs/provas.pdf)).
+
 Ressalva: não há medição de que o Gemini escreve código melhor que o Claude. O ganho vem de separar quem escreve de quem confere. Sem o `agy`, a variante só-Claude mantém a separação entre teste e código, mas perde a separação entre famílias de modelo.
 
 ---
