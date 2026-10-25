@@ -74,6 +74,8 @@ claude-dev-flow/
       git-skill/               # commit semântico com revisão de diff
       readme/                  # gera README baseado nos arquivos reais do projeto
       diagrama/                # diagrama Mermaid (arquitetura + ER) em região marcada do README
+      propor-melhoria/         # (opcional) anota falhas do próprio fluxo, com a prova, numa fila de propostas
+      fila-propostas/          # (opcional) você revisa a fila uma por vez; só o aprovado é aplicado (com backup)
     templates/
       _decisoes.md             # critério de corte e formato do registro de decisões transversais
     agents/
@@ -83,7 +85,9 @@ claude-dev-flow/
       implementador-spec.md     # subagente: reserva do Gemini quando a cota do agy acaba
     hooks/
       check-spec-revisao.ps1    # bloqueia edição de código com spec "Revisão: pendente"
+      fila-*.ps1, lembrete-nota-fila.ps1  # (opcional) ganchos da fila de propostas de melhoria
     settings.json.example       # como registrar o hook acima num projeto (copie e adapte)
+    settings.fila.json.example  # como registrar os ganchos da fila (global, em ~/.claude/settings.json)
   gemini/
     GEMINI.md                   # regras do Gemini como implementador (vai em ~/.gemini/)
     settings.json.example       # permissões do agy: o que ele pode escrever e rodar
@@ -158,6 +162,21 @@ Sem o `agy`, use `variantes/so-claude/` (veja o `LEIA-ME.md` de lá).
 ### 5. Crie um CLAUDE.md para o seu projeto
 
 Antes de qualquer código, crie um `CLAUDE.md` na raiz do projeto descrevendo o que ele faz, a stack, os módulos previstos e as convenções específicas. Quanto mais preciso, menos a IA vai adivinhar.
+
+---
+
+### 6. (Opcional) Fila de propostas de melhoria
+
+As skills ficam velhas e você só percebe quando algo quebra. Esta peça pega o erro na hora: quando a IA segue um passo de uma skill, do CLAUDE.md ou de um gancho e dá errado, `/propor-melhoria` anota o passo, a frase exata que mostrou o erro e a mudança que resolveria. Tudo vai para uma fila. **Nada é alterado sozinho.** Você abre `/fila-propostas`, lê uma proposta por vez e decide: aprovar, editar ou rejeitar. Cada aplicação faz backup antes e confere o arquivo depois.
+
+Um freio evita alarme falso: proposta vista uma única vez fica em espera até se repetir (correção sua, dita com "nunca/sempre", sobe na hora). Toda a conta da fila (status, soma de ocorrências, vencimento) é feita pelo script `fila.ps1`, não pela IA.
+
+1. Copie `.claude/skills/propor-melhoria/` e `.claude/skills/fila-propostas/` (com o `fila.ps1`) para `~/.claude/skills/`.
+2. Copie `.claude/hooks/fila-*.ps1` e `lembrete-nota-fila.ps1` para `~/.claude/hooks/`.
+3. Acrescente os blocos de `.claude/settings.fila.json.example` ao seu `~/.claude/settings.json` (troque `<usuario>` pelo seu usuário).
+4. A fila fica em `~/fila-propostas/fila.json` (backups e estado na mesma pasta).
+
+Depende de PowerShell (Windows): em outro sistema, o `fila.ps1` e os ganchos precisam ser portados.
 
 ---
 
