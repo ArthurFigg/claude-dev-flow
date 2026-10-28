@@ -62,7 +62,7 @@
 Projeto novo, nesta ordem:
 
 ```
-CLAUDE.md → /auditar-claude-md → /dominio → [/contrato, só API HTTP] →
+[/pesquisar-projeto, ideia nova] → CLAUDE.md → /auditar-claude-md → /dominio → [/contrato, só API HTTP] →
 /spec (×N) → /spec-review → /planejar-setup → executar setup →
 por spec: /implementar → /spec-close →
 /readme → /diagrama → /encerrar-projeto

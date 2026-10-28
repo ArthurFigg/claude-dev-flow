@@ -60,6 +60,7 @@ claude-dev-flow/
     fluxo.md                   # guia completo do fluxo com contexto de cada etapa
   .claude/
     skills/
+      pesquisar-projeto/       # (opcional, ideia nova) avalia se vale a pena e como fazer, antes do CLAUDE.md
       auditar-claude-md/       # valida o CLAUDE.md antes de qualquer código
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
       contrato/                # (projeto web) gera openapi.yaml (OpenAPI 3.1): recursos, endpoints, schemas
@@ -106,6 +107,7 @@ Copie para `~/.claude/CLAUDE.md` (Windows: `C:\Users\<usuario>\.claude\CLAUDE.md
 Cada pasta em `.claude/skills/` contém um `SKILL.md`. Copie as pastas inteiras para `~/.claude/skills/`, mantendo o nome — cada uma vira um slash command (`/spec`, `/implementar`...):
 
 ```
+~/.claude/skills/pesquisar-projeto/SKILL.md
 ~/.claude/skills/auditar-claude-md/SKILL.md
 ~/.claude/skills/dominio/SKILL.md
 ~/.claude/skills/contrato/SKILL.md
@@ -170,6 +172,7 @@ Peça separada, com repositório próprio: [fila-propostas](https://github.com/A
 ## O fluxo em 8 etapas
 
 ```
+0. /pesquisar-projeto     → (opcional, ideia nova) pesquisa se vale a pena e como fazer; você decide seguir, pesquisar mais ou largar
 1. Criar CLAUDE.md do projeto
 2. /auditar-claude-md     → valida gaps e inconsistências antes de codar
 3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)

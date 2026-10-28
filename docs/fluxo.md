@@ -10,6 +10,23 @@ O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os
 
 ---
 
+### Etapa 0 — `/pesquisar-projeto` (opcional, só para ideia nova)
+
+**Quando:** antes de criar o `CLAUDE.md`, quando você tem uma ideia e ainda não sabe se vale a pena nem qual o melhor jeito de fazer. Pode chamar pelo comando ou, se você disser que tem uma ideia nova, a skill pergunta se você quer rodar a etapa (você pode recusar).
+
+**O que faz:**
+- Faz até 3 perguntas, uma por vez: o problema nas suas palavras, para quem é e como você saberia que deu certo.
+- Propõe um **peso** (leve, médio ou pesado) e você ajusta. Leve: "já existe algo pronto?" e decisão. Médio: soma como outros fizeram, comparação de caminhos e a peça mais arriscada. Pesado: soma provas de que o problema é real, com a régua do que conta como "passou" definida antes de pesquisar.
+- Pesquisa o que pode mudar a decisão e separa fato (com fonte) de suposição. Sempre procura o que fala **contra** a ideia.
+- **Para e pergunta:** seguir, pesquisar mais ou largar. Largar é um resultado válido.
+- Grava um `pre-projeto.md` com a decisão, o MVP e o que fica de fora, com o motivo.
+
+**O que não faz:** não escreve código, não cria o `CLAUDE.md` e não bloqueia nada por hook. Você pode mudar o peso, pular um passo ou largar a ideia a qualquer momento.
+
+**Estado:** em uso e ajustada conforme os projetos; ainda não foi medida. Ao rodar o `/auditar-claude-md`, passe o caminho do `pre-projeto.md`.
+
+---
+
 ### Etapa 1 — Criar o CLAUDE.md do projeto
 
 **Onde:** no Claude.ai (claude.ai), antes de abrir o Claude Code.
