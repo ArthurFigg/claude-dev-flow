@@ -23,7 +23,7 @@ O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os
 
 **O que não faz:** não escreve código, não cria o `CLAUDE.md` e não bloqueia nada por hook. Você pode mudar o peso, pular um passo ou largar a ideia a qualquer momento.
 
-**Estado:** em uso e ajustada conforme os projetos; ainda não foi medida. Ao rodar o `/auditar-claude-md`, passe o caminho do `pre-projeto.md`.
+**Depois:** ao rodar o `/auditar-claude-md`, passe o caminho do `pre-projeto.md`.
 
 ---
 

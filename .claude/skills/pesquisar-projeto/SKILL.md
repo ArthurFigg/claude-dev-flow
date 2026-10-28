@@ -111,4 +111,4 @@ Se for seguir: diga onde o arquivo está e que o próximo passo é criar o `CLAU
 
 Esta skill formaliza o que desenvolvedores já fazem à mão antes de começar um projeto, quase sempre nesta ordem: problema nas palavras de quem vai usar e para quem → já existe algo? → o problema é real? (só em projetos para outras pessoas, com a régua definida antes de pesquisar) → comparar caminhos e tentar o mais barato primeiro → testar a peça mais arriscada em pequeno → o dono do projeto julga e pode descartar → escopo do MVP com o que fica de fora → tudo registrado em arquivo.
 
-Ideias de desenho vieram de leitura de projetos que fazem avaliação de ideia antes do código (extensão `assess` do spec-kit, claude-code-discover, Throughstone). Nenhum deles tem resultado medido; esta etapa é validada pelo uso.
+Ideias de desenho vieram de leitura de projetos que fazem avaliação de ideia antes do código (extensão `assess` do spec-kit, claude-code-discover, Throughstone).
