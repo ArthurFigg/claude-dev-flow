@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa do NOME DO PROJETO</title>
+<!-- MODELO do /produto. Para gerar o mapa de um projeto: copie este arquivo para PRODUTO-MAPA.html na raiz do projeto e troque (1) o título e o h1, (2) o aria-label do svg, (3) a data no parágrafo do topo, (4) os dois textos da raiz (t1 e t2) e (5) a lista ramos, de 5 a 9 ramos, com um item por decisão ou ponto em aberto. Estados: ok, ressalva, aberta, depois, risco. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mapa mental da esquerda para a direita (raiz, ramos, itens), painel de detalhe ao lado, filtro por situação. */
+:root {
+  --fundo: #f3f4f8; --papel: #ffffff; --tinta: #161a2b; --suave: #5a607a; --linha: #dfe2ec;
+  --acento: #3b3fd8; --acento-fundo: #e8e9fb;
+  --ok: #167a4a; --ok-fundo: #dff3e8;
+  --atencao: #a36200; --atencao-fundo: #fdf0d2;
+  --critico: #b3261e; --critico-fundo: #fbe3e1;
+  --depois: #5a607a; --depois-fundo: #e7e9f1;
+  --c1: #3b3fd8; --c2: #0e7c86; --c3: #b45309; --c4: #7c3aed; --c5: #be185d;
+  --c6: #15803d; --c7: #0369a1; --c8: #6b7280; --c9: #b91c1c;
+  --fonte-titulo: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --fonte-corpo: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --fundo: #0f1220; --papel: #181c30; --tinta: #eceefa; --suave: #9aa1c0; --linha: #2a3050;
+    --acento: #8d90ff; --acento-fundo: #24284d;
+    --ok: #55d296; --ok-fundo: #12392a;
+    --atencao: #f2b441; --atencao-fundo: #3d2d0c;
+    --critico: #ff8a80; --critico-fundo: #431a17;
+    --depois: #9aa1c0; --depois-fundo: #252a44;
+    --c1: #8d90ff; --c2: #4fd1db; --c3: #f0a35a; --c4: #b794f6; --c5: #f472b6;
+    --c6: #55d296; --c7: #5db8f0; --c8: #a3a9bd; --c9: #ff8a80;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --fundo: #0f1220; --papel: #181c30; --tinta: #eceefa; --suave: #9aa1c0; --linha: #2a3050;
+  --acento: #8d90ff; --acento-fundo: #24284d;
+  --ok: #55d296; --ok-fundo: #12392a;
+  --atencao: #f2b441; --atencao-fundo: #3d2d0c;
+  --critico: #ff8a80; --critico-fundo: #431a17;
+  --depois: #9aa1c0; --depois-fundo: #252a44;
+  --c1: #8d90ff; --c2: #4fd1db; --c3: #f0a35a; --c4: #b794f6; --c5: #f472b6;
+  --c6: #55d296; --c7: #5db8f0; --c8: #a3a9bd; --c9: #ff8a80;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fundo); color: var(--tinta); font: 16px/1.5 var(--fonte-corpo); }
+.pagina { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+h1, h2, h3 { font-family: var(--fonte-titulo); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.75rem); font-weight: 800; }
+p { margin: 0; }
+.suave { color: var(--suave); }
+.topo { display: flex; flex-direction: column; gap: 10px; }
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filtros button { font: 600 .875rem var(--fonte-corpo); padding: 6px 14px; border-radius: 999px; border: 1px solid var(--linha); background: var(--papel); color: var(--tinta); cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.filtros button[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: #fff; }
+.filtros button:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+.filtros .pt { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.filtros b { font-variant-numeric: tabular-nums; }
+.area { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.mapa { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.mapa svg { display: block; min-width: 820px; width: 100%; height: auto; color: var(--tinta); }
+.painel { position: sticky; top: 16px; background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; border-top: 5px solid var(--acento); }
+.painel h2 { font-size: 1.25rem; font-weight: 700; }
+.painel .apoio { font-size: .875rem; color: var(--suave); border-top: 1px solid var(--linha); padding-top: 10px; }
+.pilula { align-self: flex-start; font-size: .75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+.s-ok { background: var(--ok-fundo); color: var(--ok); }
+.s-ressalva { background: var(--atencao-fundo); color: var(--atencao); }
+.s-aberta { background: var(--critico-fundo); color: var(--critico); }
+.s-depois { background: var(--depois-fundo); color: var(--depois); }
+.s-risco { background: var(--acento-fundo); color: var(--acento); }
+.ramo-nome { font-size: .8125rem; font-weight: 600; color: var(--suave); }
+svg text { fill: currentColor; font-family: var(--fonte-corpo); font-size: 13px; }
+svg .raiz-t { font-family: var(--fonte-titulo); font-weight: 800; font-size: 17px; fill: #fff; }
+svg .ramo-t { font-family: var(--fonte-titulo); font-weight: 700; font-size: 14px; fill: #fff; }
+svg .num { font-size: 11px; fill: var(--suave); font-variant-numeric: tabular-nums; }
+.folha { cursor: pointer; transition: opacity .15s; }
+.folha rect.caixa { fill: var(--papel); stroke-width: 1.5; }
+.folha:hover rect.caixa, .folha:focus-visible rect.caixa, .folha.sel rect.caixa { stroke-width: 3; }
+.folha:focus-visible { outline: none; }
+.folha.sel rect.caixa { fill: var(--acento-fundo); }
+.folha.apagada { opacity: .2; }
+.liga { fill: none; stroke-width: 1.8; opacity: .6; }
+.dica { font-size: .875rem; color: var(--suave); }
+@media (max-width: 900px) {
+  .area { grid-template-columns: 1fr; }
+  .painel { position: sticky; top: auto; bottom: 8px; order: -1; max-height: 46vh; overflow-y: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .folha { transition: none; } }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header class="topo">
+    <h1>Mapa do NOME DO PROJETO</h1>
+    <p class="suave">Tudo o que foi decidido, aberto e deixado de fora, num mapa só. Clique em qualquer item para ler o detalhe. Gerado de <code>docs/PRODUTO.md</code> em DD/MM/AAAA.</p>
+    <div class="filtros" id="filtros" role="group" aria-label="Filtrar por situação"></div>
+    <p class="dica">No celular, deslize o mapa para os lados. O detalhe aparece em cima.</p>
+  </header>
+  <div class="area">
+    <div class="mapa"><svg id="svg" role="img" aria-label="Mapa mental do NOME DO PROJETO: ramos com os itens decididos, em aberto, deixados de fora e de risco"></svg></div>
+    <aside class="painel" id="painel" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+const S = {
+  ok: { nome: "Fechada", cor: "var(--ok)", classe: "s-ok" },
+  ressalva: { nome: "Fechada, com ressalva", cor: "var(--atencao)", classe: "s-ressalva" },
+  aberta: { nome: "Em aberto", cor: "var(--critico)", classe: "s-aberta" },
+  depois: { nome: "Fora da v1", cor: "var(--depois)", classe: "s-depois" },
+  risco: { nome: "Risco ou premissa", cor: "var(--acento)", classe: "s-risco" }
+};
+
+const ramos = [
+  { nome: "Para quem", cor: "var(--c1)", folhas: [
+    // [rótulo (até ~48 letras), estado, número da decisão ou "", texto do detalhe, quem decidiu e a fonte]
+    ["Exemplo de decisão fechada", "ok", "1", "Texto simples do que foi decidido, nas palavras dele.", "Dito por você em DD/MM."],
+    ["Exemplo de decisão com ressalva", "ressalva", "2", "Fechada, mas com um número ou regra escolhida pela IA.", "Escolha da IA, sem prova."],
+    ["Exemplo de ponto em aberto", "aberta", "", "O que ainda falta decidir e por que não trava o início.", "Decide-se na spec."]
+  ]},
+  { nome: "Fora da v1", cor: "var(--c8)", folhas: [
+    ["Exemplo de item deixado de fora", "depois", "3", "O que ficou de fora de propósito.", "Decisão dele."]
+  ]},
+  { nome: "Riscos e premissas", cor: "var(--c9)", folhas: [
+    ["Exemplo de risco aceito", "risco", "", "O que ele assume sem prova.", "Risco aceito por ele."]
+  ]}
+];
+
+
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("svg");
+const painel = document.getElementById("painel");
+const filtrosEl = document.getElementById("filtros");
+const LARG = 910, PASSO = 36, ALT_FOLHA = 30, TOPO = 16;
+const X_RAIZ = 8, L_RAIZ = 172, X_RAMO = 232, L_RAMO = 176, X_FOLHA = 470, L_FOLHA = 432;
+
+function no(tag, atrib, pai) {
+  const e = document.createElementNS(NS, tag);
+  Object.entries(atrib || {}).forEach(([k, v]) => e.setAttribute(k, v));
+  if (pai) pai.appendChild(e);
+  return e;
+}
+function curva(x1, y1, x2, y2) {
+  const d = (x2 - x1) / 2;
+  return `M${x1} ${y1} C${x1 + d} ${y1}, ${x2 - d} ${y2}, ${x2} ${y2}`;
+}
+
+let linha = 0;
+const folhasTodas = [];
+const centrosRamo = [];
+ramos.forEach((r, ri) => {
+  const ys = [];
+  r.folhas.forEach((f) => {
+    const y = TOPO + linha * PASSO + ALT_FOLHA / 2;
+    ys.push(y);
+    folhasTodas.push({ ramo: ri, y, dado: f });
+    linha++;
+  });
+  linha += 0.6;
+  centrosRamo.push((ys[0] + ys[ys.length - 1]) / 2);
+});
+const ALTURA = TOPO + linha * PASSO + 8;
+svg.setAttribute("viewBox", `0 0 ${LARG} ${ALTURA}`);
+const yRaiz = (centrosRamo[0] + centrosRamo[centrosRamo.length - 1]) / 2;
+
+const gLinhas = no("g", {}, svg);
+const gNos = no("g", {}, svg);
+
+ramos.forEach((r, ri) => {
+  no("path", { class: "liga", d: curva(X_RAIZ + L_RAIZ, yRaiz, X_RAMO, centrosRamo[ri]), stroke: r.cor }, gLinhas);
+});
+folhasTodas.forEach((f) => {
+  no("path", { class: "liga", d: curva(X_RAMO + L_RAMO, centrosRamo[f.ramo], X_FOLHA, f.y), stroke: ramos[f.ramo].cor }, gLinhas);
+});
+
+const raiz = no("g", {}, gNos);
+no("rect", { x: X_RAIZ, y: yRaiz - 34, width: L_RAIZ, height: 68, rx: 14, fill: "var(--acento)" }, raiz);
+const t1 = no("text", { class: "raiz-t", x: X_RAIZ + L_RAIZ / 2, y: yRaiz - 4, "text-anchor": "middle" }, raiz);
+t1.textContent = "Nome do projeto";
+const t2 = no("text", { class: "raiz-t", x: X_RAIZ + L_RAIZ / 2, y: yRaiz + 16, "text-anchor": "middle", style: "font-size:12px;font-weight:600" }, raiz);
+t2.textContent = "uma linha sobre o produto";
+
+ramos.forEach((r, ri) => {
+  const g = no("g", {}, gNos);
+  no("rect", { x: X_RAMO, y: centrosRamo[ri] - 19, width: L_RAMO, height: 38, rx: 10, fill: r.cor }, g);
+  const t = no("text", { class: "ramo-t", x: X_RAMO + L_RAMO / 2, y: centrosRamo[ri] + 5, "text-anchor": "middle" }, g);
+  t.textContent = r.nome;
+});
+
+const folhaEls = [];
+folhasTodas.forEach((f, i) => {
+  const [rotulo, estado, numero] = f.dado;
+  const g = no("g", { class: "folha", tabindex: 0, role: "button", "aria-label": `${rotulo}. ${S[estado].nome}` }, gNos);
+  no("rect", { class: "caixa", x: X_FOLHA, y: f.y - ALT_FOLHA / 2, width: L_FOLHA, height: ALT_FOLHA, rx: 8, stroke: ramos[f.ramo].cor }, g);
+  no("circle", { cx: X_FOLHA + 16, cy: f.y, r: 6, fill: S[estado].cor }, g);
+  const t = no("text", { x: X_FOLHA + 32, y: f.y + 4.5 }, g);
+  t.textContent = rotulo;
+  if (numero) {
+    const n = no("text", { class: "num", x: X_FOLHA + L_FOLHA - 12, y: f.y + 4, "text-anchor": "end" }, g);
+    n.textContent = "dec. " + numero;
+  }
+  g.addEventListener("click", () => escolher(i));
+  g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); escolher(i); } });
+  folhaEls.push(g);
+});
+
+function escolher(i) {
+  folhaEls.forEach((g, k) => g.classList.toggle("sel", k === i));
+  const f = folhasTodas[i];
+  const [rotulo, estado, numero, texto, apoio] = f.dado;
+  painel.style.borderTopColor = ramos[f.ramo].cor;
+  painel.replaceChildren();
+  const ramo = document.createElement("p"); ramo.className = "ramo-nome";
+  ramo.textContent = ramos[f.ramo].nome + (numero ? " · decisão " + numero : "");
+  const h = document.createElement("h2"); h.textContent = rotulo;
+  const p = document.createElement("span"); p.className = "pilula " + S[estado].classe; p.textContent = S[estado].nome;
+  const d = document.createElement("p"); d.textContent = texto;
+  painel.append(ramo, h, p, d);
+  if (apoio) { const a = document.createElement("p"); a.className = "apoio"; a.textContent = apoio; painel.appendChild(a); }
+}
+
+const ordem = ["todos", "ok", "ressalva", "aberta", "depois", "risco"];
+const contagem = {};
+folhasTodas.forEach((f) => { contagem[f.dado[1]] = (contagem[f.dado[1]] || 0) + 1; });
+ordem.forEach((k, idx) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.dataset.k = k; b.setAttribute("aria-pressed", String(idx === 0));
+  if (k !== "todos") { const pt = document.createElement("span"); pt.className = "pt"; pt.style.background = S[k].cor; b.appendChild(pt); }
+  b.append(k === "todos" ? "Todos " : S[k].nome + " ");
+  const n = document.createElement("b"); n.textContent = k === "todos" ? folhasTodas.length : contagem[k] || 0; b.appendChild(n);
+  b.addEventListener("click", () => {
+    filtrosEl.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    folhaEls.forEach((g, i) => g.classList.toggle("apagada", k !== "todos" && folhasTodas[i].dado[1] !== k));
+  });
+  filtrosEl.appendChild(b);
+});
+
+const padrao = folhasTodas.findIndex((f) => f.dado[1] === "aberta");
+escolher(padrao >= 0 ? padrao : 0);
+</script>
+</body>
+</html>

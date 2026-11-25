@@ -38,7 +38,7 @@ O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os
 - **Abrir:** lê o que existe, devolve o que entendeu, pergunta só o essencial (problema, para quem, o que fica de fora, apetite, regra de parada), propõe o peso (leve, médio ou pesado) e acha apps de referência.
 - **Decidir:** um ponto por vez. **Você decide primeiro**, sem a recomendação embutida na pergunta. No "não sei" você escolhe entre três caminhos (entrevista antes da opinião, entrevista no lugar da opinião, ou a opinião primeiro). Cada decisão é gravada na hora, com o que você disse, o que foi descartado e o custo aceito.
 - **Conferir:** uma lista de verificação e, depois de decisão grande, um agente separado (o Gemini, pelo `agy`) que lê só o documento e aponta o que foi esquecido ou contradiz outra decisão.
-- **Fechar:** parada "pronto?" (go, hold ou kill) e geração de um `CLAUDE.md` curto, que você aprova antes de salvar.
+- **Fechar:** parada "pronto?" (go, hold ou kill) e geração de um `CLAUDE.md` curto, que você aprova antes de salvar. No fim, a skill sempre gera também o `PRODUTO-MAPA.html`, um mapa mental com todas as decisões, os pontos em aberto, o que ficou de fora e os riscos (a partir do modelo `modelo-mapa.html`, na pasta da skill).
 
 **O documento vivo:** `docs/PRODUTO.md`, com estado, descrição, o que fica fora da v1, premissas não testadas, apps de referência, índice de decisões, lista aberta e decisões completas. Toda decisão que afeta o que aparece na tela leva a etiqueta `[tela]`, que é o que o `/front` (etapa 3.7) e o gancho leem.
 

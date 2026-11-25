@@ -198,7 +198,7 @@ Quem prefere copiar só os arquivos (sem atualização automática) pode usar o 
 
 ```
 0. /pesquisar-projeto     → (opcional, ideia nova) pesquisa se vale a pena e como fazer; você decide seguir, pesquisar mais ou largar
-   /produto               → (opcional, NÃO TESTADO) define o produto e grava docs/PRODUTO.md; ao fechar, gera o CLAUDE.md
+   /produto               → (opcional, NÃO TESTADO) define o produto e grava docs/PRODUTO.md; ao fechar, gera o CLAUDE.md e o mapa visual PRODUTO-MAPA.html
 1. Criar CLAUDE.md do projeto
 2. /auditar-claude-md     → valida gaps e inconsistências antes de codar
 3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)

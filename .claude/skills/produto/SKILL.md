@@ -22,12 +22,13 @@ Você conduz a definição do produto de um projeto do usuário **antes** do CLA
 9. **Paradas obrigatórias** nos passos marcados. Nada avança sem a resposta dele.
 10. **Se ele recusar o aviso de um gancho** ("não", "agora não quero"): rode `powershell -NoProfile -File "$env:USERPROFILE\.claude\hooks\produto-gancho.ps1" -Dispensar "<pasta do projeto>"` para o gancho não avisar mais neste projeto. Diga em 1 linha que fez.
 11. **Não edite** `/session-start`, `/spec`, `/dominio`, `/auditar-claude-md` por aqui (só depois do teste real, decisão dele). Nesses, apenas leia o `PRODUTO.md` quando a conversa passar por eles.
+12. **Fale como ele fala.** Palavras do dia a dia e frases curtas. Termo do próprio fluxo ("regra de parada", "decisão 4", "Passo 3B", "builder check") só com uma frase que explique e um exemplo; no lugar do número da decisão, diga o que ela é. Se ele disser "não entendi" ou "está difícil de entender", explique de outro jeito, com exemplo, sem repetir o mesmo texto. (Correção dele no teste de 25/11.)
 
 # O DOCUMENTO: `docs/PRODUTO.md` (um arquivo só, na pasta do projeto)
 
 Ordem fixa:
 1. **Estado agora** — 5 linhas: onde paramos, última decisão, o que falta, próximo passo. Atualizado no fim de cada sessão.
-2. **Descrição e para quem** — nas palavras dele (mais o que veio do `pre-projeto.md`, se existir) + **Apetite** (quanto tempo/esforço aceita gastar) + **Regra de parada** (ex.: "se passar de X sem Y, para e reavalia").
+2. **Descrição e para quem** — nas palavras dele (mais o que veio do `pre-projeto.md`, se existir) + **Regra de parada** (ex.: "se passar de X sem Y, para e reavalia"), só em projeto médio ou pesado; no leve fica em branco. Não existe campo de apetite: o peso (leve, médio ou pesado) já diz o tamanho.
 3. **Fora da v1** — o que ficou de fora de propósito, com o motivo.
 4. **Premissas não testadas** — o que ele está assumindo sem prova + **Vozes de fora** (o que fóruns/avaliações dizem) + risco aceito declarado.
 5. **Apps de referência** — lista fixa, com o motivo de cada um.
@@ -51,7 +52,7 @@ Proponha **leve, médio ou pesado** com 1 linha de motivo (como no `/pesquisar-p
 
 | Peso | Inclui |
 |---|---|
-| Leve (padrão para projeto pequeno e próprio) | Retomar, Passo 1 enxuto (descrição, fora da v1, apetite, regra de parada, premissas não testadas), Passo 2 só nos pontos que travam, Passo 3, Passo 4 |
+| Leve (padrão para projeto pequeno e próprio) | Retomar, Passo 1 enxuto (descrição, fora da v1, premissas não testadas; **sem regra de parada**: leve já quer dizer rápido), Passo 2 só nos pontos que travam, Passo 3, Passo 4 |
 | Médio | Tudo, com apps de referência e lista aberta completa |
 | Pesado (projeto para outra pessoa ou de risco alto) | Médio + vozes de fora (fóruns e avaliações) e pesquisa mais funda |
 
@@ -65,14 +66,14 @@ Proponha **leve, médio ou pesado** com 1 linha de motivo (como no `/pesquisar-p
 ## Retomar projeto começado sem aviso (não existe `PRODUTO.md`)
 1. Leia `CLAUDE.md`, `.claude/specs/` (inclusive `_decisoes.md` e `_dominio.md`), `README`, `pre-projeto.md`, memória do projeto e `git log`.
 2. Monte um `PRODUTO.md` **só com o que já está escrito nesses arquivos**, cada decisão marcada *reconstruído de <arquivo>*. Não invente campo, motivo nem data.
-3. **PARADA.** Mostre o resultado e o que ficou sem resposta (apetite, regra de parada, premissas). Ele corrige antes de gravar em `docs/PRODUTO.md`.
+3. **PARADA.** Mostre o resultado e o que ficou sem resposta (regra de parada, premissas). Ele corrige antes de gravar em `docs/PRODUTO.md`.
 
 # PASSO 1 — ABRIR
 
 1. Leia o que existe (`pre-projeto.md`, textos dele, arquivos do projeto). Fato que você acha sozinho, não pergunte.
-2. Entrada: **A** "não sei descrever" → `grilling`; **B** "já vem descrito" → leia, devolva o que entendeu e procure os buracos; **C** "o `/pesquisar-projeto` já rodou" → importe o `pre-projeto.md`, não pergunte de novo.
+2. Entrada. **Pergunte qual vale; não presuma pelos arquivos que existem.** Só dispense a pergunta se houver `pre-projeto.md` (então é C, e você avisa que presumiu). **A** ele ainda não descreveu → pergunte em aberto "o que você espera do produto?" e deixe ele contar do jeito dele; se disser que não sabe, `grilling`. **B** ele já descreveu → leia, devolva o que entendeu e procure os buracos. **C** o `/pesquisar-projeto` já rodou → importe o `pre-projeto.md`, não pergunte de novo. Arquivo de decisões sobre **como** algo funciona não é a descrição do que ele espera: só conta o que ele disse que espera do produto. (Correção dele no teste de 25/11: "eu ainda não descrevi o que espero do produto".)
 3. Devolva o que entendeu em 5 a 8 linhas para ele corrigir.
-4. Pergunte só o essencial: problema, para quem, como saber que deu certo, **o que fica de fora**, **apetite** e **regra de parada**.
+4. Proponha o peso (item 5) antes de perguntar. Pergunte só o essencial: problema, para quem, como saber que deu certo e **o que fica de fora**. **Regra de parada só em projeto médio ou pesado**; no leve, não pergunte. **Não pergunte apetite**: o peso já diz isso (decisão dele, 25/11: "o importante é só o projeto ser leve, médio ou pesado").
 5. Proponha o peso.
 6. Ache 3 a 5 apps de referência, diga por que cada um e deixe ele confirmar. Leia ajuda e avaliações deles como fonte de fato.
 7. Monte a primeira **lista aberta** (fonte de cada item: dito por ele / achado nas referências / lacuna da IA). Lacuna típica: conta e login, backup, exportar, privacidade, o que acontece na 1ª semana de uso.
@@ -83,7 +84,7 @@ Proponha **leve, médio ou pesado** com 1 linha de motivo (como no `/pesquisar-p
 1. **Ele escolhe o próximo ponto.** Você mostra a lista em ordem de dependência.
 2. Procure o tema (regra 3) e mostre **como os apps de referência resolvem**, antes de qualquer opção.
 3. Pesquise **só se faltar base e a resposta mudaria a decisão**: pergunta fechada, no máximo 2 rodadas (pelo `agy` ou pela web); "o que os apps fazem" você lê direto na ajuda deles. Se uma tarefa em segundo plano falhar, avise em até 2 minutos.
-4. Opções: 1 linha cada, com o custo. **Ele decide primeiro** (regras 1 e 2).
+4. Opções: 1 linha cada, com o custo. **Ele decide primeiro** (regras 1 e 2). **Se ele já trouxe a própria ideia, ela é a decisão dele:** mostre só o custo dela e peça confirmação; não monte outras opções, a menos que ele peça. (Correção dele no teste de 25/11: "pq esta dando essas outras opções sendo que ja falei minha ideia".)
 5. **Registre na hora** (formato da seção 8). Atualize índice e Estado agora.
 6. **Revisão cruzada:** "isso muda algo já decidido?". Mostre os ajustes e ele aprova. Veja se algo vira "fora da v1".
 7. **Decisão grande?** É grande se: restringe mais de uma tela ou módulo; muda algo já decidido; envolve dado sensível, dinheiro ou segurança; ou ele disse que é. Se for, rode o **agente de conferência** (Passo 3B) e mostre o resultado antes do próximo ponto.
@@ -95,14 +96,15 @@ Proponha **leve, médio ou pesado** com 1 linha de motivo (como no `/pesquisar-p
 **3A. Lista de verificação** (você, primeiro): retenção (o que acontece na 1ª semana); risco do próprio jogo (recompensa que tira motivação, ranking que expõe); excesso de recursos; **vozes de fora** (fóruns e avaliações); análise de negócio (o `/pesquisar-projeto` cobre, se rodou); requisito escondido.
 
 **3B. Agente de conferência** (pelo agy, fora da cota do Claude). Roda **depois de cada decisão grande** e uma vez no fechamento. **Nunca reconfere uma decisão que ele já aprovou**, a menos que ele peça (regra "agente só ativa uma vez").
+Rode **dentro da pasta do projeto** (`cd`) e **em segundo plano**: o agy sem terminal nega a leitura de caminho absoluto fora da pasta de trabalho e não gera nada (falhou assim em 25/11).
 ```bash
-~/AppData/Local/agy/bin/agy.exe -p "<TEXTO>" --model gemini-4-argon-high --mode plan \
+cd "<pasta do projeto>" && ~/AppData/Local/agy/bin/agy.exe -p "<TEXTO>" --model gemini-4-argon-high --mode plan \
   --print-timeout 600s > "$TMP/conferencia-produto.txt" 2>&1
 ```
 `<TEXTO>`:
 ```
 RULE 0: voce NAO tem terminal. Use so view_file. Nao escreva arquivo; so imprima.
-Leia SOMENTE {caminho do docs/PRODUTO.md}. Responda em portugues simples, em tabela, cinco itens:
+Leia SOMENTE docs/PRODUTO.md (caminho relativo a pasta atual). Responda em portugues simples, em tabela, cinco itens:
 1 ESQUECIDO: o que um produto desse tipo costuma ter e nao esta aqui?
 2 LARGADO: o que foi aberto e nunca fechado? Alguma decisao contradiz outra?
 3 RISCOS: o que pode fazer o produto falhar (dado sensivel, backup, abandono)?
@@ -119,9 +121,10 @@ Se a cota acabar ou der erro: **repita na hora com `--model gemini-3.8-flash-med
 
 1. **PARADA — "pronto?"** Três condições: (a) tudo que trava o código está decidido e o resto marcado como aberto, com a razão; (b) todo achado da conferência foi respondido; (c) builder check passou. Saídas: **Go**, **Hold** (falta algo, diga o quê) ou **Kill** (largar; registre o motivo).
 2. Gere o **CLAUDE.md** curto (abaixo de 200 linhas): objetivo, tipo, estrutura, convenções, decisões que travam código e uma seção **"ponte"** de 5 a 10 linhas com a síntese do produto e a linha obrigatória: *"antes de decidir qualquer coisa de produto, leia `docs/PRODUTO.md`"*. Ele aprova antes de salvar.
-3. Diga que o próximo passo é o `/auditar-claude-md` e o `/dominio`, passando o caminho do `PRODUTO.md` (essas skills ainda não o leem sozinhas).
-4. Se o produto tem tela (há decisão `[tela]`), o próximo passo depois do `/dominio` é o `/front`; ele lê as decisões marcadas e não as pergunta de novo. O gancho `front-gancho.ps1` avisa sozinho.
-5. Construção começa **numa sessão nova**. Mudança de produto depois entra na seção 10, com data.
+3. **Mapa visual, sempre, no fim (pedido dele, 25/11):** gere `PRODUTO-MAPA.html` na raiz do projeto, sem ele pedir. Copie `modelo-mapa.html` (na pasta desta skill) e troque o que o comentário do topo manda: título, textos da raiz, data e a lista `ramos` (de 5 a 9 ramos; um item por decisão ou ponto aberto, com estado `ok`, `ressalva`, `aberta`, `depois` ou `risco`, o número da decisão, o texto simples e quem decidiu). Os dados vêm só do `PRODUTO.md`; não invente item. Publique como artefato, fixe na barra lateral e dê o link. O mapa não acompanha o `PRODUTO.md` sozinho: se o documento mudar depois do Go, ofereça refazer.
+4. Diga que o próximo passo é o `/auditar-claude-md` e o `/dominio`, passando o caminho do `PRODUTO.md` (essas skills ainda não o leem sozinhas).
+5. Se o produto tem tela (há decisão `[tela]`), o próximo passo depois do `/dominio` é o `/front`; ele lê as decisões marcadas e não as pergunta de novo. O gancho `front-gancho.ps1` avisa sozinho.
+6. Construção começa **numa sessão nova**. Mudança de produto depois entra na seção 10, com data.
 
 # O QUE OS GANCHOS FAZEM (para você saber por que foi chamado)
 
@@ -142,3 +145,8 @@ O gancho `produto-gancho.ps1` só **avisa** (nunca bloqueia): sessão em pasta n
 - [ ] Toda decisão foi gravada na hora, só com o que ele disse? (meta: decisões perdidas = 0)
 - [ ] O agente rodou só em decisão nova e grande?
 - [ ] Parei em cada PARADA e esperei?
+- [ ] Perguntei qual entrada vale (A, B ou C) em vez de presumir? Pulei o apetite (não existe mais) e, em projeto leve, a regra de parada?
+- [ ] Quando ele já trouxe a própria ideia, mostrei só o custo, sem opções novas?
+- [ ] Falei sem jargão do fluxo, sem número de decisão solto?
+- [ ] Rodei o agente de conferência dentro da pasta do projeto, com caminho relativo?
+- [ ] No fim, gerei o `PRODUTO-MAPA.html`, publiquei, fixei e dei o link?
