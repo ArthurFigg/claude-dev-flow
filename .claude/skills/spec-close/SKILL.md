@@ -175,6 +175,7 @@ O codigo ja foi lido contra a spec pelo Claude dentro do `/implementar` (camada 
 1. **"Nao mexer":** rode `git diff HEAD --name-only` + `git ls-files --others --exclude-standard` e confira se algum arquivo listado na secao "Nao mexer" da spec foi alterado. Arquivo que tambem esta em "Modulos afetados" nao conta (confira o trecho lendo o diff).
 2. **Se nao ha relatorio da Etapa 4 (PASSO 3C) ou esta sessao NAO rodou o `/implementar` desta spec:** chame o agente `revisor-codigo` (via Agent tool), passando o caminho da spec e o diretorio atual — ninguem leu o codigo nesta sessao.
 3. **Arquivos soltos fora do git** (mais velhos que o ultimo commit, sem relacao com a spec): liste em uma linha e sugira commitar ou pôr no `.gitignore`.
+4. **O visual mudou? (so se o projeto tem `docs/FRONT.md`, criado pelo `/front`)**: se o PASSO 1.5 detectou modulos de UI, ou o diff mexe em arquivo de interface (`.html`, `.css`, `.scss`, `.jsx`, `.tsx`, `.vue`, `.svelte`), pergunte uma vez: "Esta spec mudou o visual (cor, letra, forma, animacao, layout)? (s/n)". Se **s** e `docs/FRONT.md` nao esta em `git diff HEAD --name-only`: entra nos achados ("visual mudou e o `docs/FRONT.md` nao foi atualizado na mesma spec") e segue o "corrigir/commitar" abaixo. Se o `FRONT.md` foi alterado, confira que o Estado dele nao foi rebaixado e que ha uma linha nova em "Mudancas depois da aprovacao". A casca (`docs/front/casca/`) **nao** precisa ser atualizada: ela fica velha de proposito. Projeto sem `docs/FRONT.md`: pule este item.
 
 **Se algo foi encontrado:** exiba a lista completa e pergunte:
 ```
@@ -438,6 +439,7 @@ Antes de encerrar, verifique:
 - [ ] Arquivos untracked com padroes suspeitos foram verificados antes do `git add -A`?
 - [ ] A decisao do usuario sobre arquivos suspeitos foi aplicada antes de continuar?
 - [ ] "Nao mexer" conferido, e o `revisor-codigo` chamado se esta sessao nao rodou o `/implementar`?
+- [ ] Se o projeto tem `docs/FRONT.md`: perguntei "o visual mudou?" e, se mudou, o `FRONT.md` foi atualizado na mesma spec?
 - [ ] A spec foi marcada como concluida no arquivo?
 - [ ] A secao "Impacto no CLAUDE.md" foi lida e, se diferente de "nenhum", as secoes indicadas foram sincronizadas antes do commit (PASSO 4.5)?
 - [ ] As "Decisoes tomadas" da spec passaram pelo criterio de corte (PASSO 4.6), promovendo so o que restringe mais de uma spec — e nada, se for o caso?

@@ -62,13 +62,13 @@
 Projeto novo, nesta ordem:
 
 ```
-[/pesquisar-projeto, ideia nova] → CLAUDE.md → /auditar-claude-md → /dominio → [/contrato, só API HTTP] →
-/spec (×N) → /spec-review → /planejar-setup → executar setup →
+[/pesquisar-projeto, ideia nova] → [/produto] → CLAUDE.md → /auditar-claude-md → /dominio → [/contrato, só API HTTP] →
+[/front, só projeto com tela] → /spec (×N) → /spec-review → /planejar-setup → executar setup →
 por spec: /implementar → /spec-close →
 /readme → /diagrama → /encerrar-projeto
 ```
 
-`/session-start` abre qualquer sessão de projeto em andamento.
+`/session-start` abre qualquer sessão de projeto em andamento. **`/produto` e `/front` ainda não foram testados em projeto real e estão sujeitos a mudanças.**
 
 **O detalhe de cada etapa está em `docs/fluxo.md`** — quando roda, o que gera, o que pula, e os dois artefatos que as skills mantêm sozinhas (`_decisoes.md` e `CHANGELOG.md`). Leia esse arquivo ao começar projeto novo ou ao escolher a próxima etapa; não precisa dele para escrever código.
 

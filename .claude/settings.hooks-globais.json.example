@@ -1,0 +1,54 @@
+{
+  "_aviso": "Registro dos ganchos de AVISO do /produto e do /front no settings.json do USUARIO (~/.claude/settings.json), nao do projeto. Eles so avisam, nunca bloqueiam. Ainda nao foram testados em projeto real. Troque <usuario> pelo seu usuario do Windows e junte estas entradas as que voce ja tem (nao substitua o arquivo inteiro).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\produto-gancho.ps1\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\front-gancho.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\produto-gancho.ps1\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\front-gancho.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\produto-gancho.ps1\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"C:\\Users\\<usuario>\\.claude\\hooks\\front-gancho.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -27,6 +27,27 @@ O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os
 
 ---
 
+### Etapa 0.5 — `/produto` (opcional, ainda não testada)
+
+> **Ainda não foi testada em projeto real e está sujeita a mudanças.**
+
+**Quando:** antes de criar o `CLAUDE.md`, quando você precisa decidir **o que o produto é** (para quem, o que fica de fora, como cada tela e regra funcionam) antes de decidir como construir. Também serve para um projeto que já começou sem esse registro (modo "retomar": a skill reconstrói o documento só com o que já está escrito e você confirma).
+
+**O que faz, em cinco partes:**
+- **Retomar:** se o projeto já tem `docs/PRODUTO.md`, resume em até 5 linhas onde parou e pergunta "é esse o assunto?" antes de qualquer coisa.
+- **Abrir:** lê o que existe, devolve o que entendeu, pergunta só o essencial (problema, para quem, o que fica de fora, apetite, regra de parada), propõe o peso (leve, médio ou pesado) e acha apps de referência.
+- **Decidir:** um ponto por vez. **Você decide primeiro**, sem a recomendação embutida na pergunta. No "não sei" você escolhe entre três caminhos (entrevista antes da opinião, entrevista no lugar da opinião, ou a opinião primeiro). Cada decisão é gravada na hora, com o que você disse, o que foi descartado e o custo aceito.
+- **Conferir:** uma lista de verificação e, depois de decisão grande, um agente separado (o Gemini, pelo `agy`) que lê só o documento e aponta o que foi esquecido ou contradiz outra decisão.
+- **Fechar:** parada "pronto?" (go, hold ou kill) e geração de um `CLAUDE.md` curto, que você aprova antes de salvar.
+
+**O documento vivo:** `docs/PRODUTO.md`, com estado, descrição, o que fica fora da v1, premissas não testadas, apps de referência, índice de decisões, lista aberta e decisões completas. Toda decisão que afeta o que aparece na tela leva a etiqueta `[tela]`, que é o que o `/front` (etapa 3.7) e o gancho leem.
+
+**O que não faz:** não escreve código e nunca decide por você. O gancho `produto-gancho.ps1` só **avisa** (projeto novo, projeto sem `PRODUTO.md`, ideia nova na mensagem, `/spec` sem `PRODUTO.md`) e nunca bloqueia.
+
+**Depende de:** a skill `grilling` (entrevista), instalada à parte. Sem ela, o passo vira uma conversa normal.
+
+---
+
 ### Etapa 1 — Criar o CLAUDE.md do projeto
 
 **Onde:** no Claude.ai (claude.ai), antes de abrir o Claude Code.
@@ -92,6 +113,27 @@ Quando terminar, abra o Claude Code dentro da pasta do projeto.
 **Por que é importante:** define a superfície da API **antes** de implementar os endpoints (contract-first). O `openapi.yaml` é o artefato de mercado: abre no Swagger UI (cole em `editor.swagger.io`), alimenta client SDKs e contract testing, e é ele mesmo a documentação da API. Cada `/spec` de endpoint depois implementa uma fatia do contrato, referenciando `operationId`/schema em vez de redefinir — o que dá ao `verificador-spec` uma fonte de verdade para pegar divergência de interface.
 
 A implementação é **code-first com FastAPI** (idiomático em Python): os modelos Pydantic materializam os schemas do contrato e o FastAPI serve o Swagger em `/docs`. Para não haver **duas fontes de verdade** divergindo, um **teste de contrato** compara o OpenAPI que o FastAPI gera com o `openapi.yaml` commitado — se o código sair do contrato, o pytest falha (é o `schemathesis` que roda esses casos). Pact e afins só fariam sentido com times de consumidor separados, que um projeto solo não tem.
+
+---
+
+### Etapa 3.7 — `/front` (só projeto com tela, ainda não testada)
+
+> **Ainda não foi testada em projeto real e está sujeita a mudanças.**
+
+**Quando:** depois do `/dominio` (para os dados de mentira usarem as entidades reais) e antes das specs, **se o projeto tem tela**, isto é, se o `docs/PRODUTO.md` tem alguma decisão marcada `[tela]`. A meta: ao terminar, você não precisa mais se preocupar com o visual, porque tudo (inclusive animação) já foi decidido e visto.
+
+**Cinco passos, cada um com uma parada:**
+1. **Brief:** o pedido de design, com 9 itens (quem usa, ação principal, pergunta da tela, clima, referências, sempre e nunca, dados e estados, plataforma, foco). O Gemini confere item por item; item cumprido é resposta concreta, com exemplo ou número.
+2. **Referências:** uma biblioteca fixa fora dos projetos. Você joga imagens e links com um comentário do que gostou; a IA escreve uma ficha interna (layout, cores, forma, letra, foco, família de estilo) e propõe de 3 a 5 fichas de famílias diferentes para o projeto. Seu comentário vale mais que a descrição da IA.
+3. **Direções:** uma amostra em HTML por ficha escolhida, só para escolher a cara. Você marca sim, talvez ou não, com motivo opcional.
+4. **Identidade:** a direção escolhida vira o `docs/FRONT.md` (texto mais valores exatos de cor, fonte e medida) e uma página visual gerada dele. Você ajusta em palavras até aprovar.
+5. **Casca completa:** todas as telas, com animação, estados (vazio, carregando, erro, lista longa) e dados de mentira. O Gemini confere contra o brief e o `FRONT.md`; você vê e aprova. O `/front` termina aqui.
+
+**Depois:** a spec **pode mudar o visual** quando precisar, e atualiza o `docs/FRONT.md` na mesma spec. A casca não é atualizada: ela fica velha de propósito, porque é só o ponto de partida. O `/spec-close` pergunta "o visual mudou?" e confere se o `FRONT.md` foi alterado.
+
+**O que não faz:** não bloqueia nada. O gancho `front-gancho.ps1` só avisa (projeto com tela sem `FRONT.md`, retomar, `/spec` ou edição de interface com o visual ainda não aprovado). Você pode dispensar o aviso por projeto.
+
+**Depende de:** a skill `grilling` (quando você diz "não sei") e o `agy` (conferente do brief e da casca).
 
 ---
 
@@ -315,7 +357,9 @@ Durante a implementação de specs, use sempre `/spec-close`.
 
 | Skill | Quando usar |
 |---|---|
+| `/produto` | (Opcional, **não testado**) Define o produto antes do CLAUDE.md; documento vivo `docs/PRODUTO.md` |
 | `/auditar-claude-md` | Valida o CLAUDE.md antes de codar |
+| `/front` | (Projeto com tela, **não testado**) Define o visual antes das specs: brief, referências, direções, identidade e casca aprovada |
 | `/dominio` | Propõe entidades, glossário e contextos (uma vez por projeto) |
 | `/contrato` | (Projeto web) Define recursos, endpoints e convenções da API; gera `openapi.yaml` (OpenAPI 3.1) |
 | `/spec` | Cria a spec de uma feature |
@@ -480,6 +524,8 @@ A IA não "entende" o código como um humano — ela prediz o próximo token (pe
 Até certo ponto, este fluxo dependia só de instrução em texto (a IA lê a regra na skill e segue). Os arquivos em `.claude/agents/` e `.claude/hooks/` adicionam dois mecanismos mais fortes, ambos opcionais:
 
 **Hook:** um script que o Claude Code executa automaticamente antes (ou depois) de uma ferramenta ser usada — por exemplo, antes de qualquer edição de arquivo. O hook deste fluxo (`check-spec-revisao.ps1`) roda antes de toda edição e verifica se existe alguma spec com `Revisão: pendente` no projeto atual. Se existir, a edição é recusada — não é um lembrete de texto que a IA pode ignorar por engano, é uma barreira técnica.
+
+Há também dois hooks de **aviso** (não de barreira), `produto-gancho.ps1` e `front-gancho.ps1`. Eles são configurados no `settings.json` do usuário (não por projeto), só acrescentam uma frase ao contexto da IA e nunca bloqueiam: avisam uma vez que existe uma etapa que ainda não rodou e deixam a decisão com você. O exemplo de registro está em `.claude/settings.hooks-globais.json.example`. Ambos ainda não foram testados em projeto real.
 
 **Subagente:** uma instância separada do Claude Code, com seu próprio contexto e próprio conjunto de ferramentas, chamada de dentro de uma skill para fazer uma tarefa específica e devolver só o resultado — sem que o trabalho intermediário dela (arquivos lidos, comparações feitas) entre na conversa principal. Este fluxo usa quatro: `revisor-codigo` (dentro do `/spec-close`, só leitura, sem permissão de editar nada), `escritor-testes` (dentro do `/implementar`, escreve os testes da spec antes de existir código) e dois de reserva para quando a cota do Gemini acaba: `verificador-spec` (confere specs no `/spec-review`, só leitura) e `implementador-spec` (escreve o código no `/implementar`). Os de leitura só reportam e nunca decidem sozinhos; os que escrevem devolvem o controle para o `/spec-close` fazer o gate de testes e commit.
 

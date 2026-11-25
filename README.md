@@ -61,6 +61,8 @@ claude-dev-flow/
   .claude/
     skills/
       pesquisar-projeto/       # (opcional, ideia nova) avalia se vale a pena e como fazer, antes do CLAUDE.md
+      produto/                 # (opcional, NÃO TESTADO) define o produto antes do CLAUDE.md; documento vivo docs/PRODUTO.md
+      front/                   # (projeto com tela, NÃO TESTADO) define o visual antes das specs; docs/FRONT.md e casca aprovada
       auditar-claude-md/       # valida o CLAUDE.md antes de qualquer código
       dominio/                 # propõe entidades, glossário e contextos (uma vez por projeto)
       contrato/                # (projeto web) gera openapi.yaml (OpenAPI 3.1): recursos, endpoints, schemas
@@ -84,7 +86,10 @@ claude-dev-flow/
       implementador-spec.md     # subagente: reserva do Gemini quando a cota do agy acaba
     hooks/
       check-spec-revisao.ps1    # bloqueia edição de código com spec "Revisão: pendente"
+      produto-gancho.ps1        # (NÃO TESTADO) só avisa: projeto novo ou sem PRODUTO.md, retomar, decisão gravada
+      front-gancho.ps1          # (NÃO TESTADO) só avisa: projeto com tela sem FRONT.md, retomar, visual não aprovado
     settings.json.example       # como registrar o hook acima num projeto (copie e adapte)
+    settings.hooks-globais.json.example  # como registrar os dois ganchos de aviso no settings.json do usuário
   gemini/
     GEMINI.md                   # regras do Gemini como implementador (vai em ~/.gemini/)
     settings.json.example       # permissões do agy: o que ele pode escrever e rodar
@@ -108,9 +113,11 @@ Cada pasta em `.claude/skills/` contém um `SKILL.md`. Copie as pastas inteiras 
 
 ```
 ~/.claude/skills/pesquisar-projeto/SKILL.md
+~/.claude/skills/produto/SKILL.md
 ~/.claude/skills/auditar-claude-md/SKILL.md
 ~/.claude/skills/dominio/SKILL.md
 ~/.claude/skills/contrato/SKILL.md
+~/.claude/skills/front/SKILL.md
 ~/.claude/skills/spec/SKILL.md
 ~/.claude/skills/spec-review/SKILL.md
 ~/.claude/skills/planejar-setup/SKILL.md
@@ -147,6 +154,8 @@ O hook (`.claude/hooks/check-spec-revisao.ps1`) bloqueia edição de código enq
 
 Sem essas duas coisas o fluxo funciona igual — elas são reforço automático dos gates que as skills já fazem sozinhas por instrução.
 
+**Ganchos de aviso do `/produto` e do `/front` (opcionais, não testados).** `produto-gancho.ps1` e `front-gancho.ps1` não bloqueiam nada: só acrescentam uma frase ao contexto da IA (por exemplo "este projeto tem tela e ainda não tem `docs/FRONT.md`; rodar `/front`?") e ela pergunta uma vez. Diferente do hook de gate, eles valem para o usuário todo: copie os dois `.ps1` para `~/.claude/hooks/` e registre-os no `~/.claude/settings.json` seguindo `.claude/settings.hooks-globais.json.example` (troque `<usuario>` e confira o caminho). Cada projeto pode dispensar o aviso.
+
 ### 4. Instale o agy (Gemini)
 
 O `/implementar` e o `/spec-review` chamam o Gemini pelo `agy` (Antigravity CLI), fora da cota do Claude.
@@ -173,10 +182,12 @@ Peça separada, com repositório próprio: [fila-propostas](https://github.com/A
 
 ```
 0. /pesquisar-projeto     → (opcional, ideia nova) pesquisa se vale a pena e como fazer; você decide seguir, pesquisar mais ou largar
+   /produto               → (opcional, NÃO TESTADO) define o produto e grava docs/PRODUTO.md; ao fechar, gera o CLAUDE.md
 1. Criar CLAUDE.md do projeto
 2. /auditar-claude-md     → valida gaps e inconsistências antes de codar
 3. /dominio               → propõe entidades, glossário e contextos (uma vez por projeto)
    /contrato              → (só projeto web) define a superfície da API antes das specs de endpoint
+   /front                 → (só projeto com tela, NÃO TESTADO) define o visual: brief, referências, direções, identidade e casca aprovada
 4. /spec                  → especifica cada feature (repetir para cada uma)
 5. /spec-review           → Gemini confere cada spec em paralelo, script acha conflitos, define ordem
 6. /planejar-setup        → decide deps e estrutura de pastas, documenta no CLAUDE.md
