@@ -178,6 +178,22 @@ Peça separada, com repositório próprio: [fila-propostas](https://github.com/A
 
 ---
 
+### 7. (Para o `/produto` e o `/front`) A skill de entrevista `grill-me` / `grilling`
+
+Quando você diz "não sei", o `/produto` e o `/front` entrevistam você com a skill **`grilling`** (o comando `/grill-me` chama ela). **Essa skill não é minha:** foi criada por **[Matt Pocock](https://github.com/mattpocock)** e está em [mattpocock/skills](https://github.com/mattpocock/skills), sob licença MIT. A ideia da entrevista que percorre cada decisão até não sobrar nada suposto é dele, e o crédito é todo dele.
+
+Para instalar no Claude Code (comando do README dele; instala o conjunto de skills, que inclui `grill-me` e `grilling`):
+
+```bash
+claude plugin install mattpocock-skills@claude-plugins-official
+```
+
+Quem prefere copiar só os arquivos (sem atualização automática) pode usar o instalador da [skills.sh](https://skills.sh/mattpocock/skills). Instale uma forma só, para não ficar com cada skill duas vezes.
+
+> A versão original do `grilling` escreve uma resposta recomendada junto de cada pergunta. Este fluxo prefere que **você decida e justifique primeiro** (regra do `/produto` e do `/front`), então na minha cópia local eu tirei essa parte. É uma adaptação minha, opcional, e não altera nada no repositório dele.
+
+---
+
 ## O fluxo em 8 etapas
 
 ```

@@ -44,7 +44,7 @@ O fluxo usa dois modelos. O **Claude** conversa com você, escreve as specs e os
 
 **O que não faz:** não escreve código e nunca decide por você. O gancho `produto-gancho.ps1` só **avisa** (projeto novo, projeto sem `PRODUTO.md`, ideia nova na mensagem, `/spec` sem `PRODUTO.md`) e nunca bloqueia.
 
-**Depende de:** a skill `grilling` (entrevista), instalada à parte. Sem ela, o passo vira uma conversa normal.
+**Depende de:** a skill `grilling` (entrevista), de [Matt Pocock](https://github.com/mattpocock/skills) (MIT), instalada à parte; o README, seção 7, tem o comando de instalação. Sem ela, o passo vira uma conversa normal.
 
 ---
 
@@ -133,7 +133,7 @@ A implementação é **code-first com FastAPI** (idiomático em Python): os mode
 
 **O que não faz:** não bloqueia nada. O gancho `front-gancho.ps1` só avisa (projeto com tela sem `FRONT.md`, retomar, `/spec` ou edição de interface com o visual ainda não aprovado). Você pode dispensar o aviso por projeto.
 
-**Depende de:** a skill `grilling` (quando você diz "não sei") e o `agy` (conferente do brief e da casca).
+**Depende de:** a skill `grilling` (quando você diz "não sei"), de [Matt Pocock](https://github.com/mattpocock/skills) (MIT; instalação no README, seção 7), e o `agy` (conferente do brief e da casca).
 
 ---
 
